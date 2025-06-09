@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar } from "@/components/ui/avatar"
 import {
   Send,
   Code,
@@ -30,6 +30,8 @@ import {
   Sun,
   Bell,
 } from "lucide-react"
+import Image from "next/image"
+import { SignedIn, UserButton, useUser } from "@clerk/nextjs"
 
 interface ChatMessage {
   id: string
@@ -49,7 +51,7 @@ interface Project {
   tags: string[]
 }
 
-export default function V0Clone() {
+export default function DevFlow() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
@@ -59,6 +61,7 @@ export default function V0Clone() {
       timestamp: new Date(),
     },
   ])
+  const user = useUser();
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("chat")
@@ -137,7 +140,7 @@ export default function Component() {
     </div>
   )
 }`,
-        preview: "/placeholder.svg?height=400&width=600",
+        preview: "/",
       }
       setMessages((prev) => [...prev, assistantMessage])
       setIsLoading(false)
@@ -150,12 +153,20 @@ export default function Component() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  function TimeClient({ date }: { date: Date }) {
+    const [time, setTime] = useState("")
+    useEffect(() => {
+      setTime(date.toLocaleTimeString())
+    }, [date])
+    return <>{time}</>
+  }
+
   return (
-    <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
-      <div className="flex h-screen bg-background text-foreground">
+    <div className={`w-screen h-screen overflow-hidden ${darkMode ? "dark" : ""}`}>
+      <div className="flex w-full h-full bg-background text-foreground overflow-hidden">
         {/* Sidebar */}
         <div
-          className={`${sidebarOpen ? "w-64" : "w-16"} transition-all duration-300 ease-in-out border-r bg-card/50 backdrop-blur-sm`}
+          className={`${sidebarOpen ? "w-64" : "w-16"} transition-all duration-300 h-full ease-in-out border-r bg-card/50 backdrop-blur-sm flex-shrink-0`}
         >
           <div className="p-4">
             <div className="flex items-center gap-2 mb-6">
@@ -204,9 +215,9 @@ export default function Component() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Header */}
-          <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-6">
+          <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 flex-shrink-0">
             <div className="flex items-center gap-4">
               <h2 className="font-semibold">AI Code Generator</h2>
               <Badge variant="secondary" className="animate-pulse">
@@ -226,17 +237,18 @@ export default function Component() {
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
               <Avatar className="w-8 h-8">
-                <AvatarImage src="/placeholder-user.jpg" />
-                <AvatarFallback>U</AvatarFallback>
+                <SignedIn>
+                  <UserButton />
+                </SignedIn>
               </Avatar>
             </div>
           </header>
 
-          <div className="flex-1 flex">
+          <div className="flex-1 flex overflow-hidden">
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <TabsList className="grid w-full grid-cols-3 mx-6 mt-4">
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+                <TabsList className="grid grid-cols-3 mx-6 mt-4 flex-shrink-0">
                   <TabsTrigger value="chat" className="gap-2">
                     <Sparkles className="w-4 h-4" />
                     Chat
@@ -251,8 +263,8 @@ export default function Component() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="chat" className="flex-1 flex flex-col m-6 mt-4">
-                  <ScrollArea className="flex-1 pr-4">
+                <TabsContent value="chat" className="flex-1 flex flex-col m-6 mt-4 overflow-auto min-h-0 hide-scrollbar">
+                  <ScrollArea className="flex-1 pr-4 hide-scrollbar">
                     <div className="space-y-6">
                       {messages.map((message) => (
                         <div
@@ -275,7 +287,7 @@ export default function Component() {
                                 message.type === "user" ? "bg-primary text-primary-foreground ml-auto" : "bg-card"
                               }`}
                             >
-                              <CardContent className="p-4">
+                              <CardContent className="">
                                 <p className="text-sm leading-relaxed">{message.content}</p>
 
                                 {message.code && (
@@ -303,9 +315,11 @@ export default function Component() {
                                 {message.preview && (
                                   <div className="mt-4 rounded-lg border overflow-hidden bg-background">
                                     <div className="aspect-video bg-muted/20 flex items-center justify-center">
-                                      <img
+                                      <Image
                                         src={message.preview || "/placeholder.svg"}
                                         alt="Preview"
+                                        height={50}
+                                        width={50}
                                         className="max-w-full max-h-full object-contain"
                                       />
                                     </div>
@@ -328,13 +342,21 @@ export default function Component() {
                               </CardContent>
                             </Card>
                             <p className="text-xs text-muted-foreground mt-2 px-1">
-                              {message.timestamp.toLocaleTimeString()}
+                              <TimeClient date={message.timestamp} />
                             </p>
                           </div>
 
                           {message.type === "user" && (
                             <Avatar className="w-8 h-8 mt-1">
-                              <AvatarFallback>U</AvatarFallback>
+                              <SignedIn>
+                                <Image
+                                  src={user.user?.imageUrl || "/placeholder.svg"}
+                                  alt={user.user?.firstName || "User"}
+                                  width={32}
+                                  height={32}
+                                  className="rounded-full object-cover w-8 h-8"
+                                />
+                              </SignedIn>
                             </Avatar>
                           )}
                         </div>
@@ -419,9 +441,9 @@ export default function Component() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="code" className="flex-1 m-6 mt-4">
+                <TabsContent value="code" className="flex-1 m-6 mt-4 overflow-auto min-h-0">
                   <Card className="h-full">
-                    <CardHeader className="pb-3">
+                    <CardHeader className="-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">Code Editor</CardTitle>
                         <div className="flex gap-2">
@@ -467,7 +489,7 @@ export default function Component() {
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="preview" className="flex-1 m-6 mt-4">
+                <TabsContent value="preview" className="flex-1 m-6 mt-4 overflow-auto min-h-0">
                   <Card className="h-full">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
@@ -520,10 +542,9 @@ export default function Component() {
                 </TabsContent>
               </Tabs>
             </div>
-
             {/* History Sidebar */}
             {historyOpen && (
-              <div className="w-80 border-l bg-card/50 backdrop-blur-sm animate-in slide-in-from-right-2 duration-300">
+              <div className="w-80 border-l bg-card/50 backdrop-blur-sm animate-in slide-in-from-right-2 duration-300 h-full overflow-y-auto flex-shrink-0">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold">Recent Projects</h3>
@@ -538,9 +559,11 @@ export default function Component() {
                         <CardContent className="p-3">
                           <div className="flex gap-3">
                             <div className="w-12 h-12 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                              <img
+                              <Image
                                 src={project.preview || "/placeholder.svg"}
                                 alt={project.name}
+                                width={48}
+                                height={48}
                                 className="w-full h-full object-cover"
                               />
                             </div>
