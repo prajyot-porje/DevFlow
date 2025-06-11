@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 export const CreateUser = mutation({
     args:{
@@ -9,7 +9,7 @@ export const CreateUser = mutation({
         uid: v.string()
     },
     handler: async (ctx, args) => {
-        const user = await ctx.db.query("users").filter(q => q.eq(q.field("email"), args.email)).collect();
+        const user = await ctx.db.query("users").filter(q => q.eq(q.field("uid"), args.uid)).collect();
         if (user.length === 0) { // <-- Only insert if user does NOT exist
             const result = await ctx.db.insert ("users", {
                 name: args.name,
@@ -21,3 +21,17 @@ export const CreateUser = mutation({
         } 
     }
 })
+
+export const GetUser = query({
+    args: {
+        uid: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const user = await ctx.db.query("users").filter(q => q.eq(q.field("uid"), args.uid)).collect();
+        if (user.length > 0) {
+            return user[0];
+        } else {
+            return '';
+        }
+    }
+});

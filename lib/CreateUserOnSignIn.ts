@@ -1,14 +1,13 @@
-'use client'
-import { useMutation } from "convex/react";
+"use client";
+import {  useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
-import { useEffect } from "react";
+import { useEffect  } from "react";
 
 export default function CreateUserOnSignIn() {
+
   const { user, isLoaded } = useUser();
   const createUser = useMutation(api.users.CreateUser);
-  if(isLoaded ){
-    console.log("User loaded:", user);}
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -23,3 +22,4 @@ export default function CreateUserOnSignIn() {
 
   return null;
 }
+

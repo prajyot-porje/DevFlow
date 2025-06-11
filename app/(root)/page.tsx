@@ -1,594 +1,699 @@
-"use client"
+"use client";
 
-import { useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Avatar } from "@/components/ui/avatar"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Send,
+  Sparkles,
   Code,
   Eye,
-  History,
-  Settings,
-  Download,
-  Share2,
-  Copy,
-  Check,
-  Sparkles,
-  Zap,
-  Layers,
-  FileCode,
+  Star,
+  Users,
   Palette,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  Moon,
-  Sun,
-  Bell,
-} from "lucide-react"
-import Image from "next/image"
-import { SignedIn, UserButton, useUser } from "@clerk/nextjs"
+  Download,
+  Github,
+  Twitter,
+  Linkedin,
+  Shield,
+  Rocket,
+  TrendingUp,
+  Send,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 
-interface ChatMessage {
-  id: string
-  type: "user" | "assistant"
-  content: string
-  timestamp: Date
-  code?: string
-  preview?: string
-}
-
-interface Project {
-  id: string
-  name: string
-  description: string
-  lastModified: Date
-  preview: string
-  tags: string[]
-}
-
-export default function DevFlow() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      type: "assistant",
-      content:
-        "Hello! I'm your AI assistant. I can help you build beautiful web interfaces. What would you like to create today?",
-      timestamp: new Date(),
-    },
-  ])
-  const user = useUser();
-  const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState("chat")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [historyOpen, setHistoryOpen] = useState(false)
-  const [previewMode, setPreviewMode] = useState("desktop")
-  const [copied, setCopied] = useState(false)
-  const [darkMode, setDarkMode] = useState(true)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  const [projects] = useState<Project[]>([
-    {
-      id: "1",
-      name: "Landing Page",
-      description: "Modern landing page with hero section",
-      lastModified: new Date(Date.now() - 1000 * 60 * 30),
-      preview: "/placeholder.svg?height=200&width=300",
-      tags: ["React", "Tailwind", "Landing"],
-    },
-    {
-      id: "2",
-      name: "Dashboard",
-      description: "Analytics dashboard with charts",
-      lastModified: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      preview: "/placeholder.svg?height=200&width=300",
-      tags: ["Dashboard", "Charts", "Analytics"],
-    },
-    {
-      id: "3",
-      name: "E-commerce",
-      description: "Product catalog with shopping cart",
-      lastModified: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      preview: "/placeholder.svg?height=200&width=300",
-      tags: ["E-commerce", "React", "Shopping"],
-    },
-  ])
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+export default function LandingPage() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(0);
+  const [chatMessage, setChatMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    setIsVisible(true);
+    const interval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % 3);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return
+  const features = [
+    {
+      icon: Sparkles,
+      title: "AI-Powered Generation",
+      description: "Transform your ideas into beautiful code with advanced AI",
+      demo: "Generate a modern dashboard with charts and analytics",
+    },
+    {
+      icon: Eye,
+      title: "Real-time Preview",
+      description: "See your creations come to life instantly",
+      demo: "Preview across mobile, tablet, and desktop devices",
+    },
+    {
+      icon: Code,
+      title: "Clean Code Output",
+      description: "Production-ready code with best practices",
+      demo: "Export optimized React components with TypeScript",
+    },
+  ];
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: "user",
-      content: input,
-      timestamp: new Date(),
-    }
+  const testimonials = [
+    {
+      name: "Sarah Chen",
+      role: "Frontend Developer",
+      company: "TechCorp",
+      avatar: "/placeholder.svg?height=40&width=40",
+      content:
+        "CodeCraft AI has revolutionized my workflow. I can prototype ideas 10x faster now!",
+      rating: 5,
+    },
+    {
+      name: "Marcus Rodriguez",
+      role: "Product Designer",
+      company: "StartupXYZ",
+      avatar: "/placeholder.svg?height=40&width=40",
+      content:
+        "The AI understands design patterns perfectly. It's like having a senior developer on demand.",
+      rating: 5,
+    },
+    {
+      name: "Emily Watson",
+      role: "Full-stack Engineer",
+      company: "InnovateLab",
+      avatar: "/placeholder.svg?height=40&width=40",
+      content:
+        "From concept to deployment in minutes. This tool is a game-changer for rapid prototyping.",
+      rating: 5,
+    },
+  ];
 
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
-    setIsLoading(true)
+  const handleChatSubmit = () => {
+    if (!chatMessage.trim()) return;
 
-    // Simulate AI response
+    setIsTyping(true);
+
+    // Simulate AI thinking for a moment
     setTimeout(() => {
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: "assistant",
-        content: `I'll help you create ${input}. Here's a beautiful implementation:`,
-        timestamp: new Date(),
-        code: `import { Button } from "@/components/ui/button"
+      // Redirect to main page with the message
+      const encodedMessage = encodeURIComponent(chatMessage);
+      router.push(`/?message=${encodedMessage}`);
+    }, 1500);
+  };
 
-export default function Component() {
-  return (
-    <div className="p-8">
-      <h1 className="text-4xl font-bold mb-4">
-        ${input}
-      </h1>
-      <Button>Get Started</Button>
-    </div>
-  )
-}`,
-        preview: "/",
-      }
-      setMessages((prev) => [...prev, assistantMessage])
-      setIsLoading(false)
-    }, 2000)
-  }
-
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  function TimeClient({ date }: { date: Date }) {
-    const [time, setTime] = useState("")
-    useEffect(() => {
-      setTime(date.toLocaleTimeString())
-    }, [date])
-    return <>{time}</>
-  }
+  const quickPrompts = [
+    "Create a modern landing page with hero section",
+    "Build a dashboard with analytics charts",
+    "Design an e-commerce product grid",
+    "Make a contact form with validation",
+    "Create a pricing table component",
+    "Build a testimonials carousel",
+  ];
 
   return (
-    <div className={`w-screen h-screen overflow-hidden ${darkMode ? "dark" : ""}`}>
-      <div className="flex w-full h-full bg-background text-foreground overflow-hidden">
-        {/* Sidebar */}
-        <div
-          className={`${sidebarOpen ? "w-64" : "w-16"} transition-all duration-300 h-full ease-in-out border-r bg-card/50 backdrop-blur-sm flex-shrink-0`}
-        >
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              {sidebarOpen && (
-                <div className="animate-in slide-in-from-left-2 duration-200">
-                  <h1 className="font-bold text-lg">DevFlow</h1>
-                  <p className="text-xs text-muted-foreground">Build with AI</p>
-                </div>
-              )}
+    <div className="min-h-screen bg-background text-foreground overflow-hidden">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
-
-            <nav className="space-y-2">
-              {[
-                { icon: Zap, label: "Generate", active: true },
-                { icon: History, label: "History" },
-                { icon: Layers, label: "Projects" },
-                { icon: Palette, label: "Templates" },
-                { icon: Settings, label: "Settings" },
-              ].map((item, index) => (
-                <Button
-                  key={index}
-                  variant={item.active ? "default" : "ghost"}
-                  className={`w-full justify-start gap-3 transition-all duration-200 ${!sidebarOpen ? "px-2" : ""}`}
-                  onClick={() => {
-                    if (item.label === "History") setHistoryOpen(!historyOpen)
-                  }}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {sidebarOpen && <span className="animate-in slide-in-from-left-2 duration-200">{item.label}</span>}
-                </Button>
-              ))}
-            </nav>
+            <span className="font-bold text-xl">DevFlow</span>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-4 -right-3 w-6 h-6 rounded-full border bg-background shadow-md"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          </Button>
+          <div className="hidden md:flex items-center gap-8">
+            <a
+              href="#features"
+              className="text-sm hover:text-primary transition-colors"
+            >
+              Features
+            </a>
+            <a
+              href="#how-it-works"
+              className="text-sm hover:text-primary transition-colors"
+            >
+              How it Works
+            </a>
+            <a
+              href="#try-now"
+              className="text-sm hover:text-primary transition-colors"
+            >
+              Try Now
+            </a>
+            <a
+              href="#testimonials"
+              className="text-sm hover:text-primary transition-colors"
+            >
+              Reviews
+            </a>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Button
+              size="sm"
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              onClick={() => router.push("/chat")}
+            >
+              Get Started
+            </Button>
+          </div>
         </div>
+      </nav>
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-          {/* Header */}
-          <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <h2 className="font-semibold">AI Code Generator</h2>
-              <Badge variant="secondary" className="animate-pulse">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                Online
-              </Badge>
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-4">
+        <div className="container mx-auto text-center">
+          <div
+            className={`transition-all duration-1000 ${
+              isVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-10"
+            }`}
+          >
+            <Badge variant="secondary" className="mb-6 px-4 py-2 text-sm">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Powered by Advanced AI
+            </Badge>
+
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              Build Beautiful UIs
+              <br />
+              <span className="text-foreground">with AI Magic</span>
+            </h1>
+
+            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+              Transform your ideas into production-ready React components in
+              seconds. No more starting from scratch.
+            </p>
+
+            <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span>10K+ Developers</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-yellow-500" />
+                <span>4.9/5 Rating</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Code className="w-4 h-4" />
+                <span>1M+ Components Generated</span>
+              </div>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
-                <Search className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Bell className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setDarkMode(!darkMode)}>
-                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </Button>
-              <Avatar className="w-8 h-8">
-                <SignedIn>
-                  <UserButton />
-                </SignedIn>
-              </Avatar>
-            </div>
-          </header>
-
-          <div className="flex-1 flex overflow-hidden">
-            {/* Chat Area */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                <TabsList className="grid grid-cols-3 mx-6 mt-4 flex-shrink-0">
-                  <TabsTrigger value="chat" className="gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Chat
-                  </TabsTrigger>
-                  <TabsTrigger value="code" className="gap-2">
-                    <Code className="w-4 h-4" />
-                    Code
-                  </TabsTrigger>
-                  <TabsTrigger value="preview" className="gap-2">
-                    <Eye className="w-4 h-4" />
-                    Preview
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="chat" className="flex-1 flex flex-col m-6 mt-4 overflow-auto min-h-0 hide-scrollbar">
-                  <ScrollArea className="flex-1 pr-4 hide-scrollbar">
-                    <div className="space-y-6">
-                      {messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex gap-4 animate-in slide-in-from-bottom-2 duration-500 ${
-                            message.type === "user" ? "justify-end" : ""
-                          }`}
-                        >
-                          {message.type === "assistant" && (
-                            <Avatar className="w-8 h-8 mt-1">
-                              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                <Sparkles className="w-4 h-4 text-white" />
-                              </div>
-                            </Avatar>
-                          )}
-
-                          <div className={`max-w-[80%] ${message.type === "user" ? "order-first" : ""}`}>
-                            <Card
-                              className={`${
-                                message.type === "user" ? "bg-primary text-primary-foreground ml-auto" : "bg-card"
-                              }`}
-                            >
-                              <CardContent className="">
-                                <p className="text-sm leading-relaxed">{message.content}</p>
-
-                                {message.code && (
-                                  <div className="mt-4 rounded-lg border bg-muted/50 overflow-hidden">
-                                    <div className="flex items-center justify-between p-3 border-b bg-muted/80">
-                                      <div className="flex items-center gap-2">
-                                        <FileCode className="w-4 h-4" />
-                                        <span className="text-sm font-medium">component.tsx</span>
-                                      </div>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => copyCode(message.code!)}
-                                        className="h-8 px-2"
-                                      >
-                                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                      </Button>
-                                    </div>
-                                    <pre className="p-4 text-sm overflow-x-auto">
-                                      <code>{message.code}</code>
-                                    </pre>
-                                  </div>
-                                )}
-
-                                {message.preview && (
-                                  <div className="mt-4 rounded-lg border overflow-hidden bg-background">
-                                    <div className="aspect-video bg-muted/20 flex items-center justify-center">
-                                      <Image
-                                        src={message.preview || "/placeholder.svg"}
-                                        alt="Preview"
-                                        height={50}
-                                        width={50}
-                                        className="max-w-full max-h-full object-contain"
-                                      />
-                                    </div>
-                                    <div className="p-3 border-t flex gap-2">
-                                      <Button size="sm" variant="outline" className="gap-2">
-                                        <Eye className="w-4 h-4" />
-                                        View
-                                      </Button>
-                                      <Button size="sm" variant="outline" className="gap-2">
-                                        <Download className="w-4 h-4" />
-                                        Export
-                                      </Button>
-                                      <Button size="sm" variant="outline" className="gap-2">
-                                        <Share2 className="w-4 h-4" />
-                                        Share
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                            <p className="text-xs text-muted-foreground mt-2 px-1">
-                              <TimeClient date={message.timestamp} />
-                            </p>
-                          </div>
-
-                          {message.type === "user" && (
-                            <Avatar className="w-8 h-8 mt-1">
-                              <SignedIn>
-                                <Image
-                                  src={user.user?.imageUrl || "/placeholder.svg"}
-                                  alt={user.user?.firstName || "User"}
-                                  width={32}
-                                  height={32}
-                                  className="rounded-full object-cover w-8 h-8"
-                                />
-                              </SignedIn>
-                            </Avatar>
-                          )}
-                        </div>
-                      ))}
-
-                      {isLoading && (
-                        <div className="flex gap-4 animate-in slide-in-from-bottom-2 duration-500">
-                          <Avatar className="w-8 h-8 mt-1">
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                              <Sparkles className="w-4 h-4 text-white animate-spin" />
-                            </div>
-                          </Avatar>
-                          <Card className="bg-card">
-                            <CardContent className="p-4">
-                              <div className="flex items-center gap-2">
-                                <div className="flex gap-1">
-                                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                                  <div
-                                    className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                                    style={{ animationDelay: "0.1s" }}
-                                  />
-                                  <div
-                                    className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                                    style={{ animationDelay: "0.2s" }}
-                                  />
-                                </div>
-                                <span className="text-sm text-muted-foreground">Generating...</span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      )}
-                    </div>
-                    <div ref={messagesEndRef} />
-                  </ScrollArea>
-
-                  {/* Input Area */}
-                  <div className="mt-4 space-y-4">
-                    <div className="flex gap-2 flex-wrap">
-                      {[
-                        "Landing page with hero section",
-                        "Dashboard with charts",
-                        "E-commerce product grid",
-                        "Login form with validation",
-                      ].map((suggestion, index) => (
-                        <Button
-                          key={index}
-                          variant="outline"
-                          size="sm"
-                          className="text-xs hover:scale-105 transition-transform"
-                          onClick={() => setInput(suggestion)}
-                        >
-                          {suggestion}
-                        </Button>
-                      ))}
+      {/* Interactive Chat Section */}
+          <div className="max-w-4xl mx-auto mt-24">
+            <Card className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-600/5" />
+              <CardContent className="p-8">
+                <div className="flex gap-8">
+                  {/* Chat Input */}
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                      <div className="flex justify-center items-center flex-col text-center  mb-2">
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                          
+                          Try it
+                          <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                            {" "}
+                            right now
+                          </span>
+                        </h2>
+                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                          Describe what you want to build and watch the magic
+                          happen
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <div className="flex-1 relative">
+                    <div className="flex flex-col items-center justify-center min-h-[200px]">
+                      <div className="relative ">
                         <Textarea
-                          placeholder="Describe what you want to build..."
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
+                          placeholder="e.g., Create a modern pricing card with gradient background, hover effects, and a call-to-action button..."
+                          value={chatMessage}
+                          onChange={(e) => setChatMessage(e.target.value)}
+                          className="h-28 w-[700px] resize-none"
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault()
-                              handleSendMessage()
+                              e.preventDefault();
+                              handleChatSubmit();
                             }
                           }}
-                          className="min-h-[60px] resize-none pr-12"
                         />
                         <Button
                           size="sm"
                           className="absolute right-2 bottom-2 h-8 w-8 p-0"
-                          onClick={handleSendMessage}
-                          disabled={!input.trim() || isLoading}
+                          onClick={handleChatSubmit}
+                          disabled={!chatMessage.trim() || isTyping}
                         >
-                          <Send className="w-4 h-4" />
+                          {isTyping ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
                         </Button>
+                      </div>
+
+                      {isTyping && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground animate-in slide-in-from-bottom-2">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+                            <div
+                              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.1s" }}
+                            />
+                            <div
+                              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.2s" }}
+                            />
+                          </div>
+                          <span>AI is thinking... Redirecting to app...</span>
+                        </div>
+                      )}
+
+                      <div className="space-y-2 mt-5 flex flex-col">
+                        <p className="text-sm text-muted-foreground pl-12">
+                          Quick examples:
+                        </p>
+                        <div className="flex flex-wrap gap-2 pl-12">
+                          {quickPrompts.slice(0, 3).map((prompt, index) => (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs hover:scale-105 transition-transform"
+                              onClick={() => setChatMessage(prompt)}
+                            >
+                              {prompt}
+                            </Button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="code" className="flex-1 m-6 mt-4 overflow-auto min-h-0">
-                  <Card className="h-full">
-                    <CardHeader className="-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Code Editor</CardTitle>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Download className="w-4 h-4 mr-2" />
-                            Export
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="h-[calc(100%-80px)]">
-                      <div className="h-full bg-muted/20 rounded-lg p-4 font-mono text-sm overflow-auto">
-                        <pre className="text-muted-foreground">
-                          {`import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-export default function Component() {
-  return (
-    <div className="container mx-auto p-8">
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle>Welcome</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            This is your generated component.
-          </p>
-          <Button className="w-full">
-            Get Started
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}`}
-                        </pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="preview" className="flex-1 m-6 mt-4 overflow-auto min-h-0">
-                  <Card className="h-full">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Preview</CardTitle>
-                        <div className="flex gap-2">
-                          <Button
-                            variant={previewMode === "mobile" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setPreviewMode("mobile")}
-                          >
-                            📱
-                          </Button>
-                          <Button
-                            variant={previewMode === "tablet" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setPreviewMode("tablet")}
-                          >
-                            📱
-                          </Button>
-                          <Button
-                            variant={previewMode === "desktop" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setPreviewMode("desktop")}
-                          >
-                            🖥️
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="h-[calc(100%-80px)]">
-                      <div
-                        className={`h-full bg-background border rounded-lg mx-auto transition-all duration-300 ${
-                          previewMode === "mobile" ? "max-w-sm" : previewMode === "tablet" ? "max-w-2xl" : "w-full"
-                        }`}
-                      >
-                        <div className="h-full flex items-center justify-center p-8">
-                          <Card className="max-w-md mx-auto">
-                            <CardHeader>
-                              <CardTitle>Welcome</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <p className="text-muted-foreground mb-4">This is your generated component preview.</p>
-                              <Button className="w-full">Get Started</Button>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </div>
-            {/* History Sidebar */}
-            {historyOpen && (
-              <div className="w-80 border-l bg-card/50 backdrop-blur-sm animate-in slide-in-from-right-2 duration-300 h-full overflow-y-auto flex-shrink-0">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">Recent Projects</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setHistoryOpen(false)}>
-                      ×
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {projects.map((project) => (
-                      <Card key={project.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-3">
-                          <div className="flex gap-3">
-                            <div className="w-12 h-12 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                              <Image
-                                src={project.preview || "/placeholder.svg"}
-                                alt={project.name}
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm truncate">{project.name}</h4>
-                              <p className="text-xs text-muted-foreground truncate">{project.description}</p>
-                              <div className="flex gap-1 mt-2">
-                                {project.tags.slice(0, 2).map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="text-xs px-1 py-0">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
                 </div>
-              </div>
-            )}
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4 bg-muted/20">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Everything you need to
+              <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                {" "}
+                build faster
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Powerful features designed to accelerate your development workflow
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            {features.map((feature, index) => (
+              <Card
+                key={index}
+                className={`relative overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer ${
+                  activeFeature === index ? "ring-2 ring-primary" : ""
+                }`}
+                onClick={() => setActiveFeature(index)}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-600/5" />
+                <CardHeader>
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    {feature.description}
+                  </p>
+                  <div className="bg-muted/50 rounded-lg p-3 text-sm font-mono">
+                    {feature.demo}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: Rocket,
+                title: "Lightning Fast",
+                desc: "Generate components in seconds",
+              },
+              {
+                icon: Shield,
+                title: "Production Ready",
+                desc: "Clean, optimized code output",
+              },
+              {
+                icon: Palette,
+                title: "Customizable",
+                desc: "Match your design system",
+              },
+              {
+                icon: TrendingUp,
+                title: "Always Learning",
+                desc: "AI improves with every use",
+              },
+            ].map((item, index) => (
+              <Card
+                key={index}
+                className="text-center hover:shadow-lg transition-shadow"
+              >
+                <CardContent className="p-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <item.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              How it works
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Three simple steps to amazing results
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {[
+              {
+                step: "01",
+                title: "Describe Your Idea",
+                description:
+                  "Tell our AI what you want to build in natural language",
+                icon: Sparkles,
+              },
+              {
+                step: "02",
+                title: "AI Generates Code",
+                description:
+                  "Watch as your idea transforms into beautiful, functional code",
+                icon: Code,
+              },
+              {
+                step: "03",
+                title: "Export & Deploy",
+                description:
+                  "Download your code or deploy directly to production",
+                icon: Download,
+              },
+            ].map((item, index) => (
+              <div key={index} className="text-center relative">
+                {index < 2 && (
+                  <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 opacity-30" />
+                )}
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                  <item.icon className="w-8 h-8 text-white" />
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-background border-2 border-primary rounded-full flex items-center justify-center text-sm font-bold">
+                    {item.step}
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
+                <p className="text-muted-foreground">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* exmple section */}
+      <section id="try-now" className="py-20 px-4 bg-muted/20">
+        <div className="container mx-auto">
+          <div
+            className={`mt-16 transition-all duration-1000 delay-300 ${
+              isVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-10"
+            }`}
+          >
+            <div className="relative max-w-5xl mx-auto">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-2xl blur-3xl" />
+              <Card className="relative bg-card/50 backdrop-blur-sm border-2">
+                <CardContent className="p-8">
+                  <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        AI is generating...
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4 text-left">
+                        <p className="text-sm font-mono">
+                          Create a modern pricing card with gradient background
+                          and hover effects
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                        <div
+                          className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        />
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-500/10 to-purple-600/10 rounded-lg p-6 border">
+                      <Card className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                        <CardHeader>
+                          <CardTitle>Pro Plan</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold mb-2">$19/mo</div>
+                          <Button variant="secondary" className="w-full">
+                            Get Started
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="py-20 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Loved by developers
+              <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                {" "}
+                worldwide
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              See what our community is saying
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                      />
+                    ))}
+                  </div>
+                  <p className="text-muted-foreground mb-6">
+                    {testimonial.content}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage
+                        src={testimonial.avatar || "/placeholder.svg"}
+                      />
+                      <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-semibold">{testimonial.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {testimonial.role} at {testimonial.company}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-4 border-t bg-muted/20">
+        <div className="container mx-auto">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-bold text-xl">DevFlow</span>
+              </div>
+              <p className="text-muted-foreground text-sm mb-4">
+                Building the future of web development with AI-powered code
+                generation.
+              </p>
+              <div className="flex gap-4">
+                <Button variant="ghost" size="sm">
+                  <Twitter className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <Github className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <Linkedin className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Templates
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    API
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Resources</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Tutorials
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Blog
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Community
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Privacy
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
+            <p>
+              &copy; 2024 CodeCraft AI. All rights reserved. Built with ❤️ for
+              developers.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
-  )
+  );
 }
