@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +23,53 @@ import {
   Send,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { MessageContext } from "@/context/MessageContext";
+import { useUser } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { GetUserDetails } from "@/hooks/GetUserDetails";
 
 export default function LandingPage() {
+
+  const [userInput, setuserInput] = useState("");
+  const {setMessages } = useContext(MessageContext);
+  const  userDetails = GetUserDetails();
+  const {user} = useUser();
+  const CreateWorkspace = useMutation(api.workspace.CreateWorkspace);
+
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
-  const [chatMessage, setChatMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const router = useRouter();
+
+  const OnGenerate = async (input: string) => {
+    if (!user?.id) {
+      router.push("/sign-in");
+      return;
+    }
+    if (!userDetails || !userDetails._id) {
+      alert("User details not loaded. Please try again in a moment.");
+      return;
+    }
+    const msg = { 
+      role: "user", 
+      content: input 
+    };
+    setIsTyping(true);
+    setMessages(msg);
+
+    const workspaceID = await CreateWorkspace({
+      user: userDetails._id,
+      message: msg,
+    });
+    console.log("Workspace created with ID:", workspaceID);
+    router.push(`/chat/${workspaceID}`);
+
+    setTimeout(() => {
+      setIsTyping(false);
+      setuserInput(""); 
+    }, 1500);
+  }
 
   useEffect(() => {
     setIsVisible(true);
@@ -90,18 +130,7 @@ export default function LandingPage() {
     },
   ];
 
-  const handleChatSubmit = () => {
-    if (!chatMessage.trim()) return;
-
-    setIsTyping(true);
-
-    // Simulate AI thinking for a moment
-    setTimeout(() => {
-      // Redirect to main page with the message
-      const encodedMessage = encodeURIComponent(chatMessage);
-      router.push(`/?message=${encodedMessage}`);
-    }, 1500);
-  };
+  
 
   const quickPrompts = [
     "Create a modern landing page with hero section",
@@ -136,12 +165,6 @@ export default function LandingPage() {
               className="text-sm hover:text-primary transition-colors"
             >
               How it Works
-            </a>
-            <a
-              href="#try-now"
-              className="text-sm hover:text-primary transition-colors"
-            >
-              Try Now
             </a>
             <a
               href="#testimonials"
@@ -234,21 +257,21 @@ export default function LandingPage() {
                       <div className="relative ">
                         <Textarea
                           placeholder="e.g., Create a modern pricing card with gradient background, hover effects, and a call-to-action button..."
-                          value={chatMessage}
-                          onChange={(e) => setChatMessage(e.target.value)}
+                          value={userInput}
+                          onChange={(e) => setuserInput(e.target.value)}
                           className="h-28 w-[700px] resize-none"
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                               e.preventDefault();
-                              handleChatSubmit();
+                              OnGenerate(userInput);
                             }
                           }}
                         />
                         <Button
                           size="sm"
                           className="absolute right-2 bottom-2 h-8 w-8 p-0"
-                          onClick={handleChatSubmit}
-                          disabled={!chatMessage.trim() || isTyping}
+                          onClick={()=>OnGenerate(userInput)}
+                          disabled={!userInput.trim() || isTyping}
                         >
                           {isTyping ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -259,7 +282,7 @@ export default function LandingPage() {
                       </div>
 
                       {isTyping && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground animate-in slide-in-from-bottom-2">
+                        <div className="flex items-center mt-4 gap-2 text-sm text-muted-foreground animate-in slide-in-from-bottom-2">
                           <div className="flex gap-1">
                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
                             <div
@@ -283,10 +306,14 @@ export default function LandingPage() {
                           {quickPrompts.slice(0, 3).map((prompt, index) => (
                             <Button
                               key={index}
+                              type="button"
                               variant="outline"
                               size="sm"
                               className="text-xs hover:scale-105 transition-transform"
-                              onClick={() => setChatMessage(prompt)}
+                              onClick={() => {
+                                setuserInput(prompt);
+                                alert(prompt); // <-- see if this fires
+                              }}
                             >
                               {prompt}
                             </Button>

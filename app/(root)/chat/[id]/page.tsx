@@ -1,23 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "@/components/ui/avatar";
-import History from "@/components/custom/History";
-import { Send, Sparkles } from "lucide-react";
+import {
+  Send,
+  Code,
+  Eye,
+  Download,
+  Share2,
+  Copy,
+  Check,
+  Sparkles,
+  FileCode,
+} from "lucide-react";
 import Image from "next/image";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import { GetUserDetails } from "@/hooks/GetUserDetails";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useRouter } from "next/navigation";
 import Sidebar from "@/components/custom/Sidebar";
+import History from "@/components/custom/History";
 import Header from "@/components/custom/Header";
-import { TabsContent } from "@radix-ui/react-tabs";
 
 interface ChatMessage {
   id: string;
@@ -28,62 +35,96 @@ interface ChatMessage {
   preview?: string;
 }
 
-export default function DevFlow() {
-  const [message, setMessage] = useState<ChatMessage[]>([]);
+function generateUniqueId() {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
-  const greetingMessage: ChatMessage = {
-    id: "greeting",
-    type: "assistant",
-    content:
-      "Hello! I'm your AI assistant. I can help you build beautiful web interfaces. What would you like to create today?",
-    timestamp: Date.now(),
-  };
-
+export default function ChatWorkspacePage() {
+  const searchParams = useSearchParams();
+  const incomingMessage = searchParams.get("message");
+  const [message, setMessage] = useState<ChatMessage[]>(() => {
+    // If there's an incoming message, start with an empty array (no greeting)
+    if (incomingMessage) return [];
+    // Otherwise, show the assistant greeting
+    return [
+      {
+        id: "1",
+        type: "assistant",
+        content:
+          "Hello! I'm your AI assistant. I can help you build beautiful web interfaces. What would you like to create today?",
+        timestamp: new Date().getTime(),
+      },
+    ];
+  });
   const user = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
+  const [copied, setCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [userInput, setuserInput] = useState("");
   const userDetails = GetUserDetails();
-  const CreateWorkspace = useMutation(api.workspace.CreateWorkspace);
   const router = useRouter();
-  function generateUniqueId() {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-  const OnGenerate = async (input: string) => {
-    if (!user.user?.id) {
-      router.push("/sign-in");
-      return;
-    }
-    if (!userDetails || !userDetails._id) {
-      return;
-    }
-    if (!input.trim()) return;
 
-    const userMessage: ChatMessage = {
-      id: generateUniqueId(),
-      type: "user",
-      content: userInput,
-      timestamp: Date.now(), // <-- Use number, not Date object
-    };
-    setMessage([userMessage]);
-
-    const workspaceID = await CreateWorkspace({
-      user: userDetails._id,
-      message: userMessage,
-    });
-    const encodedMessage = encodeURIComponent(input);
-    router.push(`/chat/${workspaceID}?message=${encodedMessage}`);
-
-    setuserInput("");
-    setIsLoading(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+  const greetingMessage: ChatMessage = {
+    id: "greeting",
+    type: "assistant",
+    content: "Hello! I'm your AI assistant. I can help you build beautiful web interfaces. What would you like to create today?",
+    timestamp: Date.now(),
   };
+
+  useEffect(() => {
+    if (incomingMessage) {
+      const decoded = decodeURIComponent(incomingMessage);
+      if (message.length === 0) {
+        const newUserId = generateUniqueId();
+        const userMessage: ChatMessage = {
+          id: newUserId,
+          type: "user",
+          content: decoded,
+          timestamp: Date.now(),
+        };
+        setMessage([
+          greetingMessage,
+          userMessage,
+        ]);
+        setuserInput(""); // clear input
+
+        setIsLoading(true);
+        setTimeout(() => {
+          const newAssistantId = generateUniqueId();
+          const assistantMessage: ChatMessage = {
+            id: newAssistantId,
+            type: "assistant",
+            content: `I'll help you create ${decoded}. Here's a beautiful implementation:`,
+            timestamp: Date.now(),
+            code: `import { Button } from "@/components/ui/button"
+
+export default function Component() {
+  return (
+    <div className="p-8">
+      <h1 className="text-4xl font-bold mb-4">
+        ${decoded}
+      </h1>
+      <Button>Get Started</Button>
+    </div>
+  )
+}`,
+            preview: "/",
+          };
+          setMessage([
+            greetingMessage,
+            userMessage,
+            assistantMessage,
+          ]);
+          setIsLoading(false);
+        }, 2000);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingMessage]);
+
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -92,6 +133,61 @@ export default function DevFlow() {
   useEffect(() => {
     scrollToBottom();
   }, [message]);
+
+  const OnGenerate = async (input: string) => {
+    if (!input.trim()) return;
+    if (!user.user?.id) {
+      router.push("/sign-in");
+      return;
+    }
+    if (!userDetails || !userDetails._id) {
+      return;
+    }
+
+    const newUserId = generateUniqueId();
+
+    const userMessage: ChatMessage = {
+      id: newUserId,
+      type: "user",
+      content: userInput,
+      timestamp: Date.now(),
+    };
+    setMessage((prev) => [...prev, userMessage]);
+    setuserInput("");
+    setIsLoading(true);
+
+    setTimeout(() => {
+      const newAssistantId = generateUniqueId();
+
+      const assistantMessage: ChatMessage = {
+        id: newAssistantId,
+        type: "assistant",
+        content: `I'll help you create ${userInput}. Here's a beautiful implementation:`,
+        timestamp:  Date.now(),
+        code: `import { Button } from "@/components/ui/button"
+
+export default function Component() {
+  return (
+    <div className="p-8">
+      <h1 className="text-4xl font-bold mb-4">
+        ${userInput}
+      </h1>
+      <Button>Get Started</Button>
+    </div>
+  )
+}`,
+        preview: "/",
+      };
+      setMessage((prev) => [...prev, assistantMessage]);
+      setIsLoading(false);
+    }, 2000);
+  };
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   function TimeClient({ date }: { date: number }) {
     const [time, setTime] = useState("");
@@ -105,11 +201,12 @@ export default function DevFlow() {
     <div className={`w-screen h-screen overflow-hidden `}>
       <div className="flex w-full h-full bg-background text-foreground overflow-hidden">
         {/* Sidebar */}
-        <Sidebar historyOpen={historyOpen} setHistoryOpen={setHistoryOpen}  />
+        <Sidebar historyOpen={historyOpen} setHistoryOpen={setHistoryOpen} />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Header */}
+
           <Header title="AI Code Generator" />
 
           <div className="flex-1 flex overflow-hidden">
@@ -120,19 +217,28 @@ export default function DevFlow() {
                 onValueChange={setActiveTab}
                 className="flex-1 flex flex-col overflow-hidden"
               >
-                <TabsList className="grid grid-cols-1 mx-6 mt-4 flex-shrink-0">
-                  <TabsTrigger value="chat" className="gap-2 w-24">
+                <TabsList className="grid grid-cols-3 mx-6 mt-4 flex-shrink-0">
+                  <TabsTrigger value="chat" className="gap-2">
                     <Sparkles className="w-4 h-4" />
                     Chat
                   </TabsTrigger>
+                  <TabsTrigger value="code" className="gap-2">
+                    <Code className="w-4 h-4" />
+                    Code
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="gap-2">
+                    <Eye className="w-4 h-4" />
+                    Preview
+                  </TabsTrigger>
                 </TabsList>
+
                 <TabsContent
+                  value="chat"
                   className="flex-1 flex flex-col m-6 mt-4 overflow-auto min-h-0 hide-scrollbar"
-                  value={"chat"}
                 >
                   <ScrollArea className="flex-1 pr-4 hide-scrollbar">
                     <div className="space-y-6">
-                      {[greetingMessage, ...message].map((message) => (
+                      {message.map((message) => (
                         <div
                           key={message.id}
                           className={`flex gap-4 animate-in slide-in-from-bottom-2 duration-500 ${
@@ -161,6 +267,76 @@ export default function DevFlow() {
                                 <p className="text-sm leading-relaxed">
                                   {message.content}
                                 </p>
+
+                                {message.code && (
+                                  <div className="mt-4 rounded-lg border bg-muted/50 overflow-hidden">
+                                    <div className="flex items-center justify-between p-3 border-b bg-muted/80">
+                                      <div className="flex items-center gap-2">
+                                        <FileCode className="w-4 h-4" />
+                                        <span className="text-sm font-medium">
+                                          component.tsx
+                                        </span>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copyCode(message.code!)}
+                                        className="h-8 px-2"
+                                      >
+                                        {copied ? (
+                                          <Check className="w-4 h-4" />
+                                        ) : (
+                                          <Copy className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                    <pre className="p-4 text-sm overflow-x-auto">
+                                      <code>{message.code}</code>
+                                    </pre>
+                                  </div>
+                                )}
+
+                                {message.preview && (
+                                  <div className="mt-4 rounded-lg border overflow-hidden bg-background">
+                                    <div className="aspect-video bg-muted/20 flex items-center justify-center">
+                                      <Image
+                                        src={
+                                          message.preview || "/placeholder.svg"
+                                        }
+                                        alt="Preview"
+                                        height={50}
+                                        width={50}
+                                        className="max-w-full max-h-full object-contain"
+                                      />
+                                    </div>
+                                    <div className="p-3 border-t flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-2"
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                        View
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-2"
+                                      >
+                                        <Download className="w-4 h-4" />
+                                        Export
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-2"
+                                      >
+                                        <Share2 className="w-4 h-4" />
+                                        Share
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </CardContent>
                             </Card>
                             <p className="text-xs text-muted-foreground mt-2 px-1">

@@ -7,12 +7,12 @@ export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
 
   // Allow access to sign-in and sign-up pages
-  if (pathname === '/sign-in' || pathname === '/sign-up') {
+  if (pathname === '/sign-in' || pathname === '/sign-up' || pathname ==='/') {
     return NextResponse.next();
   }
 
   // Block access to "/" if not logged in
-  if (pathname === '/' && !userId) {
+  if (pathname === '/chat' && !userId) {
     const signInUrl = new URL('/sign-in', req.nextUrl.origin);
     signInUrl.searchParams.set('returnBackUrl', '/');
     return NextResponse.redirect(signInUrl);
