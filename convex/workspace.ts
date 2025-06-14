@@ -14,3 +14,16 @@ export const CreateWorkspace = mutation({
         return workspaceID;
     }
 })
+
+export const UpdateMessages = mutation({
+    args: {
+        workspaceID: v.id('workspaces'),
+        message: v.any(),
+    },
+    handler: async (ctx, args) => {
+        const result = await ctx.db.patch(args.workspaceID,{
+            messages: args.message,
+        });
+        return result;
+    }
+})

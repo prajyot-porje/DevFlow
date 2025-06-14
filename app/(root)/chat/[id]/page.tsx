@@ -1,6 +1,5 @@
 "use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "@/components/ui/avatar";
+import ReactMarkdown from "react-markdown";
 import {
   Send,
   Code,
@@ -25,36 +25,28 @@ import { GetUserDetails } from "@/hooks/GetUserDetails";
 import Sidebar from "@/components/custom/Sidebar";
 import History from "@/components/custom/History";
 import Header from "@/components/custom/Header";
-
-interface ChatMessage {
-  id: string;
-  type: "user" | "assistant";
-  content: string;
-  timestamp: number; // <-- Change from Date to number
-  code?: string;
-  preview?: string;
-}
+import { ChatMessage } from "@/data/Types";
+import { greetingMessage } from "@/data/data";
+import prompt from "@/data/prompt";
+import axios from "axios";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 function generateUniqueId() {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 export default function ChatWorkspacePage() {
+  
   const searchParams = useSearchParams();
+  const params = useParams();
+  const id = params.id as string ;
+
   const incomingMessage = searchParams.get("message");
   const [message, setMessage] = useState<ChatMessage[]>(() => {
-    // If there's an incoming message, start with an empty array (no greeting)
     if (incomingMessage) return [];
-    // Otherwise, show the assistant greeting
-    return [
-      {
-        id: "1",
-        type: "assistant",
-        content:
-          "Hello! I'm your AI assistant. I can help you build beautiful web interfaces. What would you like to create today?",
-        timestamp: new Date().getTime(),
-      },
-    ];
+    return [greetingMessage];
   });
   const user = useUser();
   const [isLoading, setIsLoading] = useState(false);
@@ -65,12 +57,37 @@ export default function ChatWorkspacePage() {
   const [userInput, setuserInput] = useState("");
   const userDetails = GetUserDetails();
   const router = useRouter();
+  const updateMessages = useMutation(api.workspace.UpdateMessages);
+  useEffect(() => {
+    if (message?.length > 0) {
+      const role = message[message.length - 1].type;
+      if (role === "user") {
+        GetAiResponse();
+      }
+    }
 
-  const greetingMessage: ChatMessage = {
-    id: "greeting",
-    type: "assistant",
-    content: "Hello! I'm your AI assistant. I can help you build beautiful web interfaces. What would you like to create today?",
-    timestamp: Date.now(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [message]);
+
+  const GetAiResponse = async () => {
+    const pro = JSON.stringify(message) + (prompt.CHAT_PROMPT || "");
+    const response = await axios.post("/api/AI_chat", {
+      prompt: pro,
+    });
+    const ai_response: ChatMessage = {
+      id: generateUniqueId(),
+      type: "assistant",
+      content: response.data.result,
+      timestamp: Date.now(),
+    };
+    setMessage((prev) => [...prev, ai_response]);
+    if (id) {
+      await updateMessages({
+        message: [...message, ai_response],
+        workspaceID: id as Id<"workspaces">
+      });
+    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -84,47 +101,16 @@ export default function ChatWorkspacePage() {
           content: decoded,
           timestamp: Date.now(),
         };
-        setMessage([
-          greetingMessage,
-          userMessage,
-        ]);
-        setuserInput(""); // clear input
-
+        setMessage([greetingMessage, userMessage]);
+        setuserInput("");
         setIsLoading(true);
         setTimeout(() => {
-          const newAssistantId = generateUniqueId();
-          const assistantMessage: ChatMessage = {
-            id: newAssistantId,
-            type: "assistant",
-            content: `I'll help you create ${decoded}. Here's a beautiful implementation:`,
-            timestamp: Date.now(),
-            code: `import { Button } from "@/components/ui/button"
-
-export default function Component() {
-  return (
-    <div className="p-8">
-      <h1 className="text-4xl font-bold mb-4">
-        ${decoded}
-      </h1>
-      <Button>Get Started</Button>
-    </div>
-  )
-}`,
-            preview: "/",
-          };
-          setMessage([
-            greetingMessage,
-            userMessage,
-            assistantMessage,
-          ]);
           setIsLoading(false);
-        }, 2000);
+        }, 5000);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingMessage]);
-
-
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -157,30 +143,8 @@ export default function Component() {
     setIsLoading(true);
 
     setTimeout(() => {
-      const newAssistantId = generateUniqueId();
-
-      const assistantMessage: ChatMessage = {
-        id: newAssistantId,
-        type: "assistant",
-        content: `I'll help you create ${userInput}. Here's a beautiful implementation:`,
-        timestamp:  Date.now(),
-        code: `import { Button } from "@/components/ui/button"
-
-export default function Component() {
-  return (
-    <div className="p-8">
-      <h1 className="text-4xl font-bold mb-4">
-        ${userInput}
-      </h1>
-      <Button>Get Started</Button>
-    </div>
-  )
-}`,
-        preview: "/",
-      };
-      setMessage((prev) => [...prev, assistantMessage]);
       setIsLoading(false);
-    }, 2000);
+    }, 5000);
   };
 
   const copyCode = (code: string) => {
@@ -264,9 +228,11 @@ export default function Component() {
                               }`}
                             >
                               <CardContent className="">
-                                <p className="text-sm leading-relaxed">
+                                <div className="text-sm leading-relaxed">
+                                <ReactMarkdown >
                                   {message.content}
-                                </p>
+                                </ReactMarkdown>
+                                </div>
 
                                 {message.code && (
                                   <div className="mt-4 rounded-lg border bg-muted/50 overflow-hidden">

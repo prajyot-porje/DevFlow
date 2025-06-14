@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Sparkles,
   Code,
-  Eye,
   Star,
   Users,
   Palette,
@@ -28,6 +27,7 @@ import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { GetUserDetails } from "@/hooks/GetUserDetails";
+import { features, quickPrompts, testimonials } from "@/data/data";
 
 export default function LandingPage() {
 
@@ -78,68 +78,6 @@ export default function LandingPage() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-
-  const features = [
-    {
-      icon: Sparkles,
-      title: "AI-Powered Generation",
-      description: "Transform your ideas into beautiful code with advanced AI",
-      demo: "Generate a modern dashboard with charts and analytics",
-    },
-    {
-      icon: Eye,
-      title: "Real-time Preview",
-      description: "See your creations come to life instantly",
-      demo: "Preview across mobile, tablet, and desktop devices",
-    },
-    {
-      icon: Code,
-      title: "Clean Code Output",
-      description: "Production-ready code with best practices",
-      demo: "Export optimized React components with TypeScript",
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: "Sarah Chen",
-      role: "Frontend Developer",
-      company: "TechCorp",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content:
-        "CodeCraft AI has revolutionized my workflow. I can prototype ideas 10x faster now!",
-      rating: 5,
-    },
-    {
-      name: "Marcus Rodriguez",
-      role: "Product Designer",
-      company: "StartupXYZ",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content:
-        "The AI understands design patterns perfectly. It's like having a senior developer on demand.",
-      rating: 5,
-    },
-    {
-      name: "Emily Watson",
-      role: "Full-stack Engineer",
-      company: "InnovateLab",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content:
-        "From concept to deployment in minutes. This tool is a game-changer for rapid prototyping.",
-      rating: 5,
-    },
-  ];
-
-  
-
-  const quickPrompts = [
-    "Create a modern landing page with hero section",
-    "Build a dashboard with analytics charts",
-    "Design an e-commerce product grid",
-    "Make a contact form with validation",
-    "Create a pricing table component",
-    "Build a testimonials carousel",
-  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">

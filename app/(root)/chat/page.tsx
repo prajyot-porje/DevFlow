@@ -18,27 +18,13 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/custom/Sidebar";
 import Header from "@/components/custom/Header";
 import { TabsContent } from "@radix-ui/react-tabs";
+import { ChatMessage } from "@/data/Types";
+import { greetingMessage } from "@/data/data";
 
-interface ChatMessage {
-  id: string;
-  type: "user" | "assistant";
-  content: string;
-  timestamp: number; // <-- Change from Date to number
-  code?: string;
-  preview?: string;
-}
+
 
 export default function DevFlow() {
   const [message, setMessage] = useState<ChatMessage[]>([]);
-
-  const greetingMessage: ChatMessage = {
-    id: "greeting",
-    type: "assistant",
-    content:
-      "Hello! I'm your AI assistant. I can help you build beautiful web interfaces. What would you like to create today?",
-    timestamp: Date.now(),
-  };
-
   const user = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
