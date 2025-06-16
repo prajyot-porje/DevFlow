@@ -1,16 +1,12 @@
-import { ai } from "@/configs/AiModel";
+import { generateChatResponse } from "@/configs/AiModel";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  try {
     const { prompt } = await request.json();
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemma-3n-e4b-it",
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-        });
-        const ai_resp = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        return NextResponse.json({ result: ai_resp }, { status: 200 });
-    } catch (e) {
-        return NextResponse.json({ result: e }, { status: 400 });
-    }
+    const responseText = await generateChatResponse(prompt);
+    return NextResponse.json({ result: responseText }, { status: 200 });
+  } catch (e) {
+    return NextResponse.json({ result: "Error processing request.", error: String(e) }, { status: 400 });
+  }
 }

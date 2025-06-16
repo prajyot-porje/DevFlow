@@ -28,6 +28,9 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { GetUserDetails } from "@/hooks/GetUserDetails";
 import { features, quickPrompts, testimonials } from "@/data/data";
+import { useTheme } from "next-themes";
+
+import { Moon, Sun } from 'lucide-react'
 
 export default function LandingPage() {
 
@@ -36,7 +39,7 @@ export default function LandingPage() {
   const  userDetails = GetUserDetails();
   const {user} = useUser();
   const CreateWorkspace = useMutation(api.workspace.CreateWorkspace);
-
+  const { theme , setTheme }  = useTheme();;
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
@@ -113,6 +116,17 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
+            <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                >
+                    {theme === "dark" ? (
+                        <Sun className="w-4 h-4" />
+                    ) : (
+                        <Moon className="w-4 h-4" />
+                    )}
+                </Button>
             <Button
               size="sm"
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
