@@ -2,10 +2,10 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-const chatModel = "gemini-2.5-flash-preview-05-20"; 
-const codeModel = "gemini-2.5-flash-preview-05-20"; 
+const chatModel = "gemini-2.5-flash-lite-preview-06-17"; 
+const codeModel = "gemini-2.5-flash"; 
 const chatConfig = {
-  responseMimeType: "text/plain",
+  responseMimeType: "application/json",
 };
 const codeConfig = {
   responseMimeType: "application/json",

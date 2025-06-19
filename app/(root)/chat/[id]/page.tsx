@@ -1,302 +1,285 @@
-"use client"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar } from "@/components/ui/avatar"
-import { Skeleton } from "@/components/ui/skeleton"
-import ReactMarkdown from "react-markdown"
-
+"use client";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar } from "@/components/ui/avatar";
+import ReactMarkdown from "react-markdown";
+import { Send, Code, Eye, Sparkles, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { SignedIn, useUser } from "@clerk/nextjs";
+import { GetUserDetails } from "@/hooks/GetUserDetails";
+import Sidebar from "@/components/custom/Sidebar";
+import History from "@/components/custom/History";
+import Header from "@/components/custom/Header";
+import type { ChatMessage } from "@/data/Types";
+import { buildAIPrompt, greetingMessage } from "@/data/data";
+import prompt from "@/data/prompt";
+import axios from "axios";
+import { useConvex, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { sandpackFiles as initialFiles } from "@/data/data";
+import { useWebContainer } from "@/hooks/useWebContainer ";
 import {
-  SandpackProvider,
-  SandpackLayout,
-  SandpackCodeEditor,
-  SandpackPreview,
-  SandpackFileExplorer,
-} from "@codesandbox/sandpack-react"
-import { Send, Code, Eye, Sparkles, FileText, Loader2 } from "lucide-react"
-import Image from "next/image"
-import { SignedIn, useUser } from "@clerk/nextjs"
-import { GetUserDetails } from "@/hooks/GetUserDetails"
-import Sidebar from "@/components/custom/Sidebar"
-import History from "@/components/custom/History"
-import Header from "@/components/custom/Header"
-import type { ChatMessage } from "@/data/Types"
-import { buildAIPrompt, greetingMessage } from "@/data/data"
-import prompt from "@/data/prompt"
-import axios from "axios"
-import { useMutation } from "convex/react"
-import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
-import { useTheme } from "next-themes"
-import { sandpackFiles as initialFiles } from "@/data/data"
+  CodeTabSkeleton,
+  PreviewTabSkeleton,
+} from "@/components/custom/Loaders";
+import { WebContainerPreview } from "@/components/custom/webContainer/preview";
+import { ResizableEditor } from "@/components/custom/webContainer/resizeable-editor";
+import type { FileSystemTree } from '@webcontainer/api';
+
 
 function generateUniqueId() {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Code Tab Skeleton Loader Component
-function CodeTabSkeleton() {
-  return (
-    <div className="flex h-[79vh] w-full animate-in fade-in-0 duration-500">
-      {/* File Explorer Skeleton */}
-      <div className="w-[12vw] border-r bg-card p-4 space-y-3">
-        <div className="flex items-center gap-2 mb-4">
-          <Skeleton className="h-4 w-4" />
-          <Skeleton className="h-4 w-20" />
-        </div>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-2 animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <Skeleton className="h-4 flex-1" />
-          </div>
-        ))}
-      </div>
+type InputFileStructure = Record<string, { code: string }>;
 
-      {/* Code Editor Skeleton */}
-      <div className="flex-1 bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between mb-4">
-          <Skeleton className="h-6 w-32" />
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Generating code...</span>
-          </div>
-        </div>
+export function convertToWebContainerFileSystem(fileStructure: InputFileStructure): FileSystemTree {
+  const root: FileSystemTree = {};
 
-        {/* Code lines skeleton */}
-        <div className="space-y-2">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 animate-pulse" style={{ animationDelay: `${i * 50}ms` }}>
-              <Skeleton className="h-4 w-8 flex-shrink-0" />
-              <Skeleton className="h-4" style={{ width: `${Math.random() * 60 + 20}%` }} />
-            </div>
-          ))}
-        </div>
+  for (const fullPath in fileStructure) {
+    const parts = fullPath.replace(/^\//, '').split('/');
+    let current: FileSystemTree = root;
 
-        {/* Animated typing indicator */}
-        <div className="flex items-center gap-2 mt-6">
-          <div className="flex gap-1">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-          </div>
-          <span className="text-sm text-muted-foreground">Writing your code...</span>
-        </div>
-      </div>
-    </div>
-  )
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isFile = i === parts.length - 1;
+
+      if (isFile) {
+        current[part] = {
+          file: {
+            contents: fileStructure[fullPath].code,
+          },
+        };
+      } else {
+        if (!current[part]) {
+          current[part] = {
+            directory: {},
+          };
+        } else if (!('directory' in current[part])) {
+          throw new Error(`Conflict at ${fullPath}: trying to create directory but found a file.`);
+        }
+
+        // Safely narrow the type
+        current = (current[part] as { directory: FileSystemTree }).directory;
+      }
+    }
+  }
+
+  return root;
 }
 
-// Preview Tab Skeleton Loader Component
-function PreviewTabSkeleton() {
-  return (
-    <div className="h-[79vh] bg-card border rounded-lg overflow-hidden animate-in fade-in-0 duration-500">
-      {/* Browser-like header */}
-      <div className="h-12 bg-muted border-b flex items-center gap-2 px-4">
-        <div className="flex gap-2">
-          <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse" />
-          <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" style={{ animationDelay: "0.1s" }} />
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }} />
-        </div>
-        <div className="flex-1 mx-4">
-          <Skeleton className="h-6 w-48" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <span className="text-sm text-muted-foreground">Building preview...</span>
-        </div>
-      </div>
 
-      {/* Preview content skeleton */}
-      <div className="p-6 space-y-6">
-        {/* Header section */}
-        <div className="space-y-3">
-          <Skeleton className="h-8 w-3/4 animate-pulse" />
-          <Skeleton className="h-4 w-1/2 animate-pulse" style={{ animationDelay: "0.1s" }} />
-        </div>
 
-        {/* Content blocks */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="animate-pulse" style={{ animationDelay: `${i * 150}ms` }}>
-              <CardContent className="p-4 space-y-3">
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Bottom section */}
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-1/3 animate-pulse" />
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton
-                key={i}
-                className="h-4 animate-pulse"
-                style={{
-                  width: `${Math.random() * 40 + 60}%`,
-                  animationDelay: `${i * 100}ms`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Animated building indicator */}
-        <div className="flex items-center justify-center gap-3 mt-8 p-6 bg-muted/50 rounded-lg">
-          <div className="flex gap-1">
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" />
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-          </div>
-          <span className="text-sm text-muted-foreground">Compiling your application...</span>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function ChatWorkspacePage() {
-  const { theme } = useTheme()
-  const searchParams = useSearchParams()
-  const params = useParams()
-  const id = params.id as string
-  const incomingMessage = searchParams.get("message")
-  const [files, setFiles] = useState(initialFiles)
-
+  const searchParams = useSearchParams();
+  const params = useParams();
+  const id = params.id as string;
+  const incomingMessage = searchParams.get("message");
+  const [files, setFiles] = useState<InputFileStructure>(initialFiles);
+  const UpdateFiles = useMutation(api.workspace.UpdateFiles);
+  const { webContainer, error: containerError } = useWebContainer();
+  const [selectedFile, setSelectedFile] = useState("/src/App.jsx");
+  const [responseRecevied,setresponseRecevied]=useState(false);
   const [message, setMessage] = useState<ChatMessage[]>(() => {
-    if (incomingMessage) return []
-    return [greetingMessage]
-  })
+    if (incomingMessage) return [];
+    return [greetingMessage];
+  });
+  const user = useUser();
+  const userDetails = GetUserDetails();
+  const [isLoading, setIsLoading] = useState(false);
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [activeTab, setActiveTab] = useState("chat");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [userInput, setuserInput] = useState("");
+  const router = useRouter();
+  const updateMessages = useMutation(api.workspace.UpdateMessages);
+  const convex = useConvex();
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  const user = useUser()
-  const userDetails = GetUserDetails()
+  // Update WebContainer files when files change
+  useEffect(() => {
+    if (webContainer && Object.keys(files).length > 0) {
+      const updateFiles = async () => {
+        try {
+          const convertedFiles = convertToWebContainerFileSystem(files);
+          await webContainer.mount(convertedFiles);
+        } catch (error) {
+          console.error("Failed to update WebContainer files:", error);
+        }
+      };
+      updateFiles();
+    }
+  }, [files, webContainer]);
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [generatingCode, setGeneratingCode] = useState(false)
-  const [activeTab, setActiveTab] = useState("chat")
-  const [historyOpen, setHistoryOpen] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [userInput, setuserInput] = useState("")
-  const router = useRouter()
-  const updateMessages = useMutation(api.workspace.UpdateMessages)
+
+  // Handle file changes
+  const handleFileChange = (fileName: string, code: string) => {
+    const updatedFiles = {
+      ...files,
+      [fileName]: { code },
+    };
+    setFiles(updatedFiles);
+  };
+
+  useEffect(() => {
+    getData();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const getData = async () => {
+    setLoadingHistory(true);
+    const result = await convex.query(api.workspace.GetWorkspace, {
+      workspaceID: id as Id<"workspaces">,
+    });
+    const dbFiles = { ...files, ...result?.files };
+    setFiles(dbFiles);
+
+    if (Array.isArray(result?.messages)) {
+      setMessage(result.messages);
+    }
+    setLoadingHistory(false);
+  };
 
   useEffect(() => {
     if (incomingMessage) {
-      const decoded = decodeURIComponent(incomingMessage)
+      const decoded = decodeURIComponent(incomingMessage);
       if (message.length === 0) {
-        const newUserId = generateUniqueId()
+        const newUserId = generateUniqueId();
         const userMessage: ChatMessage = {
           id: newUserId,
           type: "user",
           content: decoded,
           timestamp: Date.now(),
-        }
-        setMessage([greetingMessage, userMessage])
-        setuserInput("")
-        setIsLoading(true)
-        const params = new URLSearchParams(window.location.search)
-        params.delete("message")
+        };
+        setMessage([greetingMessage, userMessage]);
+        setuserInput("");
+        setIsLoading(true);
+        const params = new URLSearchParams(window.location.search);
+        params.delete("message");
 
-        router.replace(`?${params.toString()}`)
+        router.replace(`?${params.toString()}`);
 
         setTimeout(() => {
-          setIsLoading(false)
-        }, 5000)
+          setIsLoading(false);
+        }, 5000);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingMessage])
 
-  // Only call GetAiResponse after a user message
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingMessage]);
+
   useEffect(() => {
+    if (loadingHistory) return;
+
     if (message?.length > 0) {
-      const role = message[message.length - 1].type
+      const role = message[message.length - 1].type;
       if (role === "user") {
-        GetAiResponse()
+        GetAiResponse();
       }
     }
-    scrollToBottom()
+    scrollToBottom();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [message])
+  }, [message, loadingHistory]);
 
-  // Call GenerateAiCode after receiving the AI response
- // ...existing code...
+  const OnGenerate = async (input: string) => {
+    if (!input.trim()) return;
+    if (!user.user?.id) {
+      router.push("/sign-in");
+      return;
+    }
+    if (!userDetails || !userDetails._id) {
+      return;
+    }
+    setIsLoading(true);
+    setGeneratingCode(false);
 
-const OnGenerate = async (input: string) => {
-  if (!input.trim()) return
-  if (!user.user?.id) {
-    router.push("/sign-in")
-    return
-  }
-  if (!userDetails || !userDetails._id) {
-    return
-  }
-  setIsLoading(true) // Start chat loader
-  setGeneratingCode(false) // Reset code loader
+    const newUserId = generateUniqueId();
+    const userMessage: ChatMessage = {
+      id: newUserId,
+      type: "user",
+      content: input,
+      timestamp: Date.now(),
+    };
+    setMessage((prev) => [...prev, userMessage]);
+    setuserInput("");
+  };
 
-  const newUserId = generateUniqueId()
-  const userMessage: ChatMessage = {
-    id: newUserId,
-    type: "user",
-    content: userInput,
-    timestamp: Date.now(),
-  }
-  setMessage((prev) => [...prev, userMessage])
-  setuserInput("")
-}
+  const GetAiResponse = async () => {
+    setIsLoading(true);
+    setGeneratingCode(true);
+    const pro = JSON.stringify(message) + (prompt.CHAT_PROMPT || "");
+    const response = await axios.post("/api/AI_chat", {
+      prompt: pro,
+    });
+    console.log(response.data.result);
+    const ai_response: ChatMessage = {
+      id: generateUniqueId(),
+      type: "assistant",
+      content: response.data.result.userResponse,
+      timestamp: Date.now(),
+    };
+    setMessage((prev) => [...prev, ai_response]);
+    if (id) {
+      await updateMessages({
+        message: [...message, ai_response],
+        workspaceID: id as Id<"workspaces">,
+      });
+    }
+    setIsLoading(false);
+    await GenerateAiCode(response.data.result.modelResponse);
+    setGeneratingCode(false);
+  };
 
-const GetAiResponse = async () => {
-  setIsLoading(true) // Start chat loader
-  const pro = JSON.stringify(message) + (prompt.CHAT_PROMPT || "")
-  const response = await axios.post("/api/AI_chat", {
-    prompt: pro,
-  })
-  const ai_response: ChatMessage = {
-    id: generateUniqueId(),
-    type: "assistant",
-    content: response.data.result,
-    timestamp: Date.now(),
-  }
-  setMessage((prev) => [...prev, ai_response])
-  if (id) {
-    await updateMessages({
-      message: [...message, ai_response],
+  const GenerateAiCode = async (aiContent: string) => {
+    const prompt = buildAIPrompt(files, aiContent);
+    const result = await axios.post("/api/AI_code", { prompt });
+    const code_response = result.data;
+    if(code_response) {setresponseRecevied(true)};
+    const mergefiles = { ...files, ...code_response?.files };
+    setFiles(mergefiles);
+    await UpdateFiles({
       workspaceID: id as Id<"workspaces">,
-    })
-  }
-  setIsLoading(false) // End chat loader
-
-  setGeneratingCode(true) // Start code loader
-  await GenerateAiCode(ai_response.content)
-  setGeneratingCode(false) // End code loader
-}
-
-const GenerateAiCode = async (aiContent: string) => {
-  const prompt = buildAIPrompt(files, aiContent)
-  const result = await axios.post("/api/AI_code", { prompt })
-  const code_response = result.data
-  setFiles({ ...files, ...code_response?.files })
-}
-
-// ...existing code...
+      files: mergefiles,
+    });
+  };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   function TimeClient({ date }: { date: number }) {
-    const [time, setTime] = useState("")
+    const [time, setTime] = useState("");
     useEffect(() => {
-      setTime(new Date(date).toLocaleTimeString())
-    }, [date])
-    return <>{time}</>
+      setTime(new Date(date).toLocaleTimeString());
+    }, [date]);
+    return <>{time}</>;
+  }
+
+  if (containerError) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center">
+        <Card className="p-6 max-w-md">
+          <CardContent className="text-center space-y-4">
+            <div className="text-red-500">
+              <Loader2 className="h-8 w-8 mx-auto mb-2" />
+            </div>
+            <h2 className="text-lg font-semibold">WebContainer Error</h2>
+            <p className="text-sm text-muted-foreground">{containerError}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -312,7 +295,11 @@ const GenerateAiCode = async (aiContent: string) => {
           <div className="flex-1 flex overflow-hidden">
             {/* Chat Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex-1 flex flex-col overflow-hidden"
+              >
                 <TabsList className="grid grid-cols-3 mx-6 mt-4 flex-shrink-0">
                   <TabsTrigger value="chat" className="gap-2">
                     <Sparkles className="w-4 h-4" />
@@ -321,12 +308,16 @@ const GenerateAiCode = async (aiContent: string) => {
                   <TabsTrigger value="code" className="gap-2">
                     <Code className="w-4 h-4" />
                     Code
-                    {generatingCode && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                    {generatingCode && (
+                      <Loader2 className="w-3 h-3 animate-spin ml-1" />
+                    )}
                   </TabsTrigger>
                   <TabsTrigger value="preview" className="gap-2">
                     <Eye className="w-4 h-4" />
                     Preview
-                    {generatingCode && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                    {generatingCode && (
+                      <Loader2 className="w-3 h-3 animate-spin ml-1" />
+                    )}
                   </TabsTrigger>
                 </TabsList>
 
@@ -352,15 +343,21 @@ const GenerateAiCode = async (aiContent: string) => {
                             </Avatar>
                           )}
 
-                          <div className={`max-w-[80%] ${message.type === "user" ? "order-first" : ""}`}>
+                          <div
+                            className={`max-w-[80%] ${message.type === "user" ? "order-first" : ""}`}
+                          >
                             <Card
                               className={`${
-                                message.type === "user" ? "bg-primary text-primary-foreground ml-auto" : "bg-card"
+                                message.type === "user"
+                                  ? "bg-primary text-primary-foreground ml-auto"
+                                  : "bg-card"
                               }`}
                             >
                               <CardContent className="">
                                 <div className="text-sm leading-relaxed">
-                                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                                  <ReactMarkdown>
+                                    {message.content}
+                                  </ReactMarkdown>
                                 </div>
                               </CardContent>
                             </Card>
@@ -373,7 +370,9 @@ const GenerateAiCode = async (aiContent: string) => {
                             <Avatar className="w-8 h-8 mt-1">
                               <SignedIn>
                                 <Image
-                                  src={user.user?.imageUrl || "/placeholder.svg"}
+                                  src={
+                                    user.user?.imageUrl || "/placeholder.svg"
+                                  }
                                   alt={user.user?.firstName || "User"}
                                   width={32}
                                   height={32}
@@ -406,7 +405,9 @@ const GenerateAiCode = async (aiContent: string) => {
                                     style={{ animationDelay: "0.2s" }}
                                   />
                                 </div>
-                                <span className="text-sm text-muted-foreground">Generating...</span>
+                                <span className="text-sm text-muted-foreground">
+                                  Generating...
+                                </span>
                               </div>
                             </CardContent>
                           </Card>
@@ -420,8 +421,8 @@ const GenerateAiCode = async (aiContent: string) => {
                   <div className="mt-4 space-y-4">
                     <div className="flex gap-2 flex-wrap">
                       {[
-                        "Landing page with hero section",
-                        "Dashboard with charts",
+                        "Make a todo website",
+                        "Make a budget traking app",
                         "E-commerce product grid",
                         "Login form with validation",
                       ].map((suggestion, index) => (
@@ -445,8 +446,8 @@ const GenerateAiCode = async (aiContent: string) => {
                           onChange={(e) => setuserInput(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault()
-                              OnGenerate(userInput)
+                              e.preventDefault();
+                              OnGenerate(userInput);
                             }
                           }}
                           className="min-h-[60px] resize-none pr-12"
@@ -455,7 +456,7 @@ const GenerateAiCode = async (aiContent: string) => {
                           size="sm"
                           className="absolute right-2 bottom-2 h-8 w-8 p-0"
                           onClick={() => {
-                            OnGenerate(userInput)
+                            OnGenerate(userInput);
                           }}
                           disabled={!userInput.trim() || isLoading}
                         >
@@ -466,59 +467,51 @@ const GenerateAiCode = async (aiContent: string) => {
                   </div>
                 </TabsContent>
 
-                {/* Code and Preview Tabs */}
-                <SandpackProvider
-                  template="react"
-                  theme={theme === "dark" ? "dark" : "light"}
-                  files={files}
-                  customSetup={{
-                    dependencies: {
-                      react: "latest",
-                      "react-dom": "latest",
-                      tailwindcss: "latest",
-                      postcss: "latest",
-                      autoprefixer: "latest",
-                      "lucide-react": "latest",
-                    },
-                  }}
+                {/* Code Tab */}
+                <TabsContent
+                  value="code"
+                  className="flex-1 flex m-6 mt-4 overflow-auto min-h-0 hide-scrollbar"
                 >
-                  <SandpackLayout>
-                    <TabsContent value="code" className="flex-1 flex m-6 mt-4 overflow-auto min-h-0 hide-scrollbar">
-                      {generatingCode ? (
-                        <CodeTabSkeleton />
-                      ) : (
-                        <>
-                          <SandpackFileExplorer style={{ height: "79vh", width: "12vw" }} />
-                          <SandpackCodeEditor
-                            style={{ height: "79vh" }}
-                            showLineNumbers={true}
-                            showInlineErrors
-                            wrapContent
-                            closableTabs
-                          />
-                        </>
-                      )}
-                    </TabsContent>
-                    <TabsContent
-                      value="preview"
-                      className="flex-1 flex flex-col m-6 mt-4 overflow-auto min-h-0 hide-scrollbar"
-                    >
-                      {generatingCode ? (
-                        <PreviewTabSkeleton />
-                      ) : (
-                        <SandpackPreview style={{ height: "79vh" }} showNavigator={true} />
-                      )}
-                    </TabsContent>
-                  </SandpackLayout>
-                </SandpackProvider>
+                  {generatingCode ? (
+                    <CodeTabSkeleton />
+                  ) : (
+                    <div className="flex h-full w-full">
+                      <ResizableEditor
+                        files={files}
+                        selectedFile={selectedFile}
+                        onFileSelect={setSelectedFile}
+                        onFileChange={handleFileChange}
+                      />
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Preview Tab */}
+                <TabsContent
+                  value="preview"
+                  className="flex-1 flex flex-col m-6 mt-4 overflow-auto min-h-0 hide-scrollbar"
+                >
+                  {generatingCode ? (
+                    <PreviewTabSkeleton />
+                  ) : (
+                    <WebContainerPreview
+                      webContainer={webContainer}
+                      files={files}
+                      responseRecevied={responseRecevied}
+                    />
+                  )}
+                </TabsContent>
               </Tabs>
             </div>
 
             {/* History Sidebar */}
-            <History historyOpen={historyOpen} setHistoryOpen={setHistoryOpen} />
+            <History
+              historyOpen={historyOpen}
+              setHistoryOpen={setHistoryOpen}
+            />
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -209,9 +209,9 @@ export default function DevFlow() {
                   <div className="mt-4 space-y-4">
                     <div className="flex gap-2 flex-wrap">
                       {[
-                        "Landing page with hero section",
-                        "Dashboard with charts",
-                        "E-commerce product grid",
+                        "Make a Todo App",
+                        "Build a Budget tracker website",
+                        "Simple E-commerce website",
                         "Login form with validation",
                       ].map((suggestion, index) => (
                         <Button

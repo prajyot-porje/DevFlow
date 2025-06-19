@@ -1,7 +1,8 @@
 'use client'
+
 import { SignedIn, UserButton } from '@clerk/nextjs'
 import { Avatar } from '@radix-ui/react-avatar'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from '../ui/button'
 import { Bell, Moon, Search, Sun } from 'lucide-react'
 import { Badge } from '../ui/badge'
@@ -9,6 +10,13 @@ import { useTheme } from 'next-themes'
 
 const Header = ({ title }: { title: string }) => {
     const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    // Delay rendering until mounted (client only)
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     return (
         <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 flex-shrink-0">
             <div className="flex items-center gap-4">
@@ -31,7 +39,7 @@ const Header = ({ title }: { title: string }) => {
                     size="sm"
                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 >
-                    {theme === "dark" ? (
+                    {mounted && theme === "dark" ? (
                         <Sun className="w-4 h-4" />
                     ) : (
                         <Moon className="w-4 h-4" />
@@ -44,7 +52,7 @@ const Header = ({ title }: { title: string }) => {
                 </Avatar>
             </div>
         </header>
-    )
-}
+    );
+};
 
-export default Header
+export default Header;
