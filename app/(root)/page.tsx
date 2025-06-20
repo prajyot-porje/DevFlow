@@ -30,16 +30,17 @@ import { GetUserDetails } from "@/hooks/GetUserDetails";
 import { features, quickPrompts, testimonials } from "@/data/data";
 import { useTheme } from "next-themes";
 
-import { Moon, Sun } from 'lucide-react'
-
+import { Moon, Sun } from "lucide-react";
+function generateUniqueId() {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 export default function LandingPage() {
-
   const [userInput, setuserInput] = useState("");
-  const {setMessages } = useContext(MessageContext);
-  const  userDetails = GetUserDetails();
-  const {user} = useUser();
+  const { setMessages } = useContext(MessageContext);
+  const userDetails = GetUserDetails();
+  const { user } = useUser();
   const CreateWorkspace = useMutation(api.workspace.CreateWorkspace);
-  const { theme , setTheme }  = useTheme();;
+  const { theme, setTheme } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
@@ -54,9 +55,11 @@ export default function LandingPage() {
       alert("User details not loaded. Please try again in a moment.");
       return;
     }
-    const msg = { 
-      role: "user", 
-      content: input 
+    const msg = {
+      id: generateUniqueId(),
+      type: "user",
+      content: input,
+      timestamp: Date.now(),
     };
     setIsTyping(true);
     setMessages(msg);
@@ -65,14 +68,14 @@ export default function LandingPage() {
       user: userDetails._id,
       message: msg,
     });
-    console.log("Workspace created with ID:", workspaceID);
-    router.push(`/chat/${workspaceID}`);
+    const encodedMessage = encodeURIComponent(input);
+    router.push(`/chat/${workspaceID}?message=${encodedMessage}`);
 
     setTimeout(() => {
       setIsTyping(false);
-      setuserInput(""); 
+      setuserInput("");
     }, 1500);
-  }
+  };
 
   useEffect(() => {
     setIsVisible(true);
@@ -117,16 +120,16 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-4">
             <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                >
-                    {theme === "dark" ? (
-                        <Sun className="w-4 h-4" />
-                    ) : (
-                        <Moon className="w-4 h-4" />
-                    )}
-                </Button>
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </Button>
             <Button
               size="sm"
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
@@ -160,14 +163,14 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-              Transform your ideas into production-ready React components in
+              Transform your ideas into production-ready React Projects in
               seconds. No more starting from scratch.
             </p>
 
             <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                <span>10K+ Developers</span>
+                <span>Students </span>
               </div>
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-yellow-500" />
@@ -175,12 +178,12 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Code className="w-4 h-4" />
-                <span>1M+ Components Generated</span>
+                <span>Easy Components Generation</span>
               </div>
             </div>
           </div>
 
-      {/* Interactive Chat Section */}
+          {/* Interactive Chat Section */}
           <div className="max-w-4xl mx-auto mt-24">
             <Card className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-600/5" />
@@ -191,7 +194,6 @@ export default function LandingPage() {
                     <div className="flex items-center justify-center gap-3 mb-6">
                       <div className="flex justify-center items-center flex-col text-center  mb-2">
                         <h2 className="text-3xl md:text-5xl font-bold mb-4">
-                          
                           Try it
                           <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                             {" "}
@@ -222,7 +224,7 @@ export default function LandingPage() {
                         <Button
                           size="sm"
                           className="absolute right-2 bottom-2 h-8 w-8 p-0"
-                          onClick={()=>OnGenerate(userInput)}
+                          onClick={() => OnGenerate(userInput)}
                           disabled={!userInput.trim() || isTyping}
                         >
                           {isTyping ? (
@@ -264,7 +266,6 @@ export default function LandingPage() {
                               className="text-xs hover:scale-105 transition-transform"
                               onClick={() => {
                                 setuserInput(prompt);
-                                alert(prompt); // <-- see if this fires
                               }}
                             >
                               {prompt}

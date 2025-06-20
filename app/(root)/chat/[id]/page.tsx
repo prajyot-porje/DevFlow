@@ -95,6 +95,7 @@ export default function ChatWorkspacePage() {
   const userDetails = GetUserDetails();
   const [isLoading, setIsLoading] = useState(false);
   const [generatingCode, setGeneratingCode] = useState(false);
+  const [title,setTitle] = useState("AI Code Generator");
   const [activeTab, setActiveTab] = useState("chat");
   const [historyOpen, setHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -221,7 +222,7 @@ export default function ChatWorkspacePage() {
     const response = await axios.post("/api/AI_chat", {
       prompt: pro,
     });
-    console.log(response.data.result);
+    setTitle(response.data.result.title)
     const ai_response: ChatMessage = {
       id: generateUniqueId(),
       type: "assistant",
@@ -291,7 +292,7 @@ export default function ChatWorkspacePage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Header */}
-          <Header title="AI Code Generator" />
+          <Header title={title} />
           <div className="flex-1 flex overflow-hidden">
             {/* Chat Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden">

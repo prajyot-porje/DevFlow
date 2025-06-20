@@ -51,7 +51,7 @@ export default function DevFlow() {
       id: generateUniqueId(),
       type: "user",
       content: userInput,
-      timestamp: Date.now(), // <-- Use number, not Date object
+      timestamp: Date.now(), 
     };
     setMessage([userMessage]);
 
@@ -64,11 +64,6 @@ export default function DevFlow() {
 
     setuserInput("");
     setIsLoading(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
   };
 
   const scrollToBottom = () => {
