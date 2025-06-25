@@ -224,6 +224,7 @@ Your task is to generate **clean, beautiful, and responsive UIs**, following the
 - Ensure a **clean, modern, minimal aesthetic** (no outdated or plain styles).
 - Keep components **modular and accessible**.
 - Do **NOT** use Next.js or create any '/pages'directory.
+- Do **NOT** use typescript , keep the project in javascript only
 - Do **NOT** place files in a 'public' folder (unless explicitly requested).
 - Include **only** files that are **new or changed**.
 - Always include **full file paths and full code** for each file.

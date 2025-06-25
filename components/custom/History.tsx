@@ -18,8 +18,9 @@ interface Project {
   tags: string[];
 }
 
+
 const History : React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) =>  {
-      const [projects] = useState<Project[]>([
+      const [project] = useState<Project[]>([
         {
           id: "1",
           name: "Landing Page",
@@ -56,7 +57,7 @@ const History : React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) =>  {
                     </Button>
                   </div>
                   <div className="space-y-3">
-                    {projects.map((project) => (
+                    {project.map((project) => (
                       <Card key={project.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                         <CardContent className="p-3">
                           <div className="flex gap-3">

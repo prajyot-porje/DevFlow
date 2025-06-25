@@ -84,6 +84,12 @@ export default function LandingPage() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+  const [mounted, setMounted] = useState(false);
+  
+      // Delay rendering until mounted (client only)
+      useEffect(() => {
+        setMounted(true);
+      }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
@@ -124,7 +130,7 @@ export default function LandingPage() {
               size="sm"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
-              {theme === "dark" ? (
+              {mounted && theme === "dark" ? (
                 <Sun className="w-4 h-4" />
               ) : (
                 <Moon className="w-4 h-4" />

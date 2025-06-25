@@ -1,4 +1,5 @@
 "use client";
+
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,7 @@ import {
 } from "@/components/custom/Loaders";
 import { WebContainerPreview } from "@/components/custom/webContainer/preview";
 import { ResizableEditor } from "@/components/custom/webContainer/resizeable-editor";
-import type { FileSystemTree } from '@webcontainer/api';
-
+import type { FileSystemTree } from "@webcontainer/api";
 
 function generateUniqueId() {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -39,11 +39,13 @@ function generateUniqueId() {
 
 type InputFileStructure = Record<string, { code: string }>;
 
-export function convertToWebContainerFileSystem(fileStructure: InputFileStructure): FileSystemTree {
+export function convertToWebContainerFileSystem(
+  fileStructure: InputFileStructure
+): FileSystemTree {
   const root: FileSystemTree = {};
 
   for (const fullPath in fileStructure) {
-    const parts = fullPath.replace(/^\//, '').split('/');
+    const parts = fullPath.replace(/^\//, "").split("/");
     let current: FileSystemTree = root;
 
     for (let i = 0; i < parts.length; i++) {
@@ -61,8 +63,10 @@ export function convertToWebContainerFileSystem(fileStructure: InputFileStructur
           current[part] = {
             directory: {},
           };
-        } else if (!('directory' in current[part])) {
-          throw new Error(`Conflict at ${fullPath}: trying to create directory but found a file.`);
+        } else if (!("directory" in current[part])) {
+          throw new Error(
+            `Conflict at ${fullPath}: trying to create directory but found a file.`
+          );
         }
 
         // Safely narrow the type
@@ -76,7 +80,6 @@ export function convertToWebContainerFileSystem(fileStructure: InputFileStructur
 
 
 
-
 export default function ChatWorkspacePage() {
   const searchParams = useSearchParams();
   const params = useParams();
@@ -86,7 +89,7 @@ export default function ChatWorkspacePage() {
   const UpdateFiles = useMutation(api.workspace.UpdateFiles);
   const { webContainer, error: containerError } = useWebContainer();
   const [selectedFile, setSelectedFile] = useState("/src/App.jsx");
-  const [responseRecevied,setresponseRecevied]=useState(false);
+  const [responseRecevied, setresponseRecevied] = useState(false);
   const [message, setMessage] = useState<ChatMessage[]>(() => {
     if (incomingMessage) return [];
     return [greetingMessage];
@@ -95,7 +98,7 @@ export default function ChatWorkspacePage() {
   const userDetails = GetUserDetails();
   const [isLoading, setIsLoading] = useState(false);
   const [generatingCode, setGeneratingCode] = useState(false);
-  const [title,setTitle] = useState("AI Code Generator");
+  const [title, setTitle] = useState("AI Code Generator");
   const [activeTab, setActiveTab] = useState("chat");
   const [historyOpen, setHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -120,7 +123,6 @@ export default function ChatWorkspacePage() {
     }
   }, [files, webContainer]);
 
-
   // Handle file changes
   const handleFileChange = (fileName: string, code: string) => {
     const updatedFiles = {
@@ -130,9 +132,9 @@ export default function ChatWorkspacePage() {
     setFiles(updatedFiles);
   };
 
+
   useEffect(() => {
     getData();
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -222,7 +224,7 @@ export default function ChatWorkspacePage() {
     const response = await axios.post("/api/AI_chat", {
       prompt: pro,
     });
-    setTitle(response.data.result.title)
+    setTitle(response.data.result.title);
     const ai_response: ChatMessage = {
       id: generateUniqueId(),
       type: "assistant",
@@ -245,7 +247,9 @@ export default function ChatWorkspacePage() {
     const prompt = buildAIPrompt(files, aiContent);
     const result = await axios.post("/api/AI_code", { prompt });
     const code_response = result.data;
-    if(code_response) {setresponseRecevied(true)};
+    if (code_response) {
+      setresponseRecevied(true);
+    }
     const mergefiles = { ...files, ...code_response?.files };
     setFiles(mergefiles);
     await UpdateFiles({

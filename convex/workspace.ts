@@ -25,6 +25,16 @@ export const GetWorkspace = query({
     }
 })
 
+export const GetWorkspaceByUser = query({
+    args:{
+        user: v.id('users') 
+    },
+    handler:async(ctx,args)=>{
+        const result = ctx.db.get(args.user);
+        return result;
+    }
+})
+
 export const UpdateMessages = mutation({
     args: {
         workspaceID: v.id('workspaces'),
@@ -37,6 +47,7 @@ export const UpdateMessages = mutation({
         return result;
     }
 })
+
 export const UpdateFiles = mutation({
     args: {
         workspaceID: v.id('workspaces'),
@@ -45,6 +56,19 @@ export const UpdateFiles = mutation({
     handler: async (ctx, args) => {
         const result = await ctx.db.patch(args.workspaceID,{
             files: args.files,
+        });
+        return result;
+    }
+})
+
+export const Updateinfo = mutation({
+    args: {
+        workspaceID: v.id('workspaces'),
+        info: v.any(),
+    },
+    handler: async (ctx, args) => {
+        const result = await ctx.db.patch(args.workspaceID,{
+            info: args.info,
         });
         return result;
     }
