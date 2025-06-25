@@ -39,7 +39,7 @@ function generateUniqueId() {
 
 type InputFileStructure = Record<string, { code: string }>;
 
-export function convertToWebContainerFileSystem(
+ function convertToWebContainerFileSystem(
   fileStructure: InputFileStructure
 ): FileSystemTree {
   const root: FileSystemTree = {};
