@@ -57,7 +57,7 @@ export default function LandingPage() {
       return;
     }
 
-     const result = await canStartConversation({ userId: userDetails._id });
+    const result = await canStartConversation({ userId: userDetails._id });
     if (!result.allowed) {
       setLimitDialogOpen(true);
       return;
@@ -88,7 +88,6 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -195,35 +194,36 @@ export default function LandingPage() {
             </div>
 
             {/*  Chat Section */}
-            <div className="max-w-4xl mx-auto mt-24 w-full px-2 sm:px-4">
+            <div className="max-w-4xl flex flex-col justify-center items-center mx-auto mt-24">
               <Card className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-600/5" />
-                <CardContent className="p-4 sm:p-8">
-                  <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-8">
-                    <div className="space-y-6 w-full">
+                <CardContent className="p-8">
+                  <div className="flex gap-8">
+                    {/* Chat Input */}
+                    <div className="space-y-6">
                       <div className="flex items-center justify-center gap-3 mb-6">
-                        <div className="flex justify-center items-center flex-col text-center mb-2 w-full">
-                          <h2 className="text-2xl md:text-5xl font-bold mb-4">
+                        <div className="flex justify-center items-center flex-col text-center  mb-2">
+                          <h2 className="text-3xl md:text-5xl font-bold mb-4">
                             Try it
                             <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                               {" "}
                               right now
                             </span>
                           </h2>
-                          <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto">
+                          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                             Describe what you want to build and watch the magic
                             happen
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-center justify-center min-h-[200px] w-full">
-                        <div className="relative w-full">
+                      <div className="flex flex-col items-center justify-center min-h-[200px]">
+                        <div className="relative ">
                           <Textarea
                             placeholder="e.g., Create a modern pricing card with gradient background, hover effects, and a call-to-action button..."
                             value={userInput}
                             onChange={(e) => setuserInput(e.target.value)}
-                            className="h-28 w-full max-w-full md:max-w-[700px] resize-none"
+                            className="h-28 w-[700px] resize-none"
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
@@ -410,7 +410,7 @@ export default function LandingPage() {
         </section>
 
         {/* example section */}
-        <section  className="py-20 px-4 bg-muted/20">
+        <section className="py-20 px-4 bg-muted/20">
           <div className="container mx-auto">
             <div
               className={`mt-16 transition-all duration-1000 delay-300 ${
@@ -469,10 +469,6 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
-        
-
-        
       </div>
     </>
   );
