@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { WebContainer } from "@webcontainer/api";
+import type { WebContainer, WebContainerProcess } from "@webcontainer/api";
 import {
   Eye,
   Play,
@@ -14,12 +14,12 @@ import {
   RotateCcw,
   Wifi,
   WifiOff,
-  Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type filestructure = Record<string, { code: string }>;
+
 interface WebContainerPreviewProps {
   webContainer: WebContainer | null;
   files: filestructure;
@@ -32,6 +32,7 @@ export function WebContainerPreview({
   responseRecevied,
 }: WebContainerPreviewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [iError,setIError] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [Url, setUrl] = useState("");
   const [isOnline] = useState(true);
@@ -42,22 +43,21 @@ export function WebContainerPreview({
   const [installationPhase, setInstallationPhase] = useState<
     "idle" | "installing" | "starting" | "ready"
   >("idle");
+  const [serverProcess, setServerProcess] = useState<WebContainerProcess | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (responseRecevied) {
-      main();
+      startServer();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files]);
 
-  async function main() {
+  async function startServer() {
     if (!webContainer) return;
     setIsRunning(true);
     setInstallationPhase("installing");
-
-    console.log("starting installing packages");
-    const installProcess = await webContainer.spawn("npm", ["install"]);
+    const installProcess = await webContainer.spawn("pnpm", ["install"]);
     installProcess.output.pipeTo(
       new WritableStream({
         write(data) {
@@ -65,59 +65,76 @@ export function WebContainerPreview({
         },
       })
     );
-    // Wait for install to complete
-
     const installExitCode = await installProcess.exit;
-
     if (installExitCode !== 0) {
-      <Alert>
-        <Terminal />
-        <AlertTitle>Error Installing NPM Packages</AlertTitle>
-        <AlertDescription>
-          You can refresh and regenerate the code
-        </AlertDescription>
-      </Alert>;
+      setIError(true);
+      setInstallationPhase("idle");
+      setIsRunning(false);
+      setLoadingState("error");
+      return;
     }
-
     setInstallationPhase("starting");
-    console.log("starting running website");
-
-    await webContainer.spawn("npm", ["run", "dev"]);
-
+    const server = await webContainer.spawn("npm", ["run", "dev"]);
+    setServerProcess(server);
     webContainer.on("server-ready", (port, url) => {
-      console.log(port);
-      console.log(url);
       setUrl(url);
       setport(port.toString());
       setInstallationPhase("ready");
+      setLoadingState("loading"); 
+    });
+
+    server.exit.then(() => {
+      setIsRunning(false);
+      setInstallationPhase("idle");
+      setServerProcess(null);
     });
   }
   const onStart = () => {
-    main();
+    if (!isRunning) startServer();
   };
-
+  const onStop = async () => {
+    if (serverProcess) {
+      await serverProcess.kill();
+      setIsRunning(false);
+      setInstallationPhase("idle");
+      setServerProcess(null);
+      setUrl("");
+    }
+  };
+  const onRestart = async () => {
+    await onStop();
+    startServer();
+  };
   const handleIframeLoad = () => {
     setLoadingState("loaded");
   };
-
   const handleIframeError = () => {
     setLoadingState("error");
   };
-
   const openInNewTab = () => {
     if (Url) {
       window.open(Url, "_blank");
     }
   };
-
   const refreshPreview = () => {
     if (iframeRef.current) {
       setLoadingState("loading");
       iframeRef.current.src = iframeRef.current.src;
     }
   };
-
   return (
+    <>
+    <AlertDialog open={iError} onOpenChange={setIError}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+            <AlertDialogTitle>Dependency installation failed</AlertDialogTitle>
+            <AlertDialogDescription>
+            An error occurred during the dependency installation process. Please try restarting the server or consider creating a new project if the issue persists.
+            </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogAction onClick={() => setIError(false)}>OK</AlertDialogAction>
+      </AlertDialogContent>
+    </AlertDialog>
     <div
       className={`bg-card border rounded-lg overflow-hidden flex flex-col ${
         isFullscreen ? "fixed inset-4 z-50" : "h-[79vh]"
@@ -161,7 +178,7 @@ export function WebContainerPreview({
 
           {/* Server Controls */}
           {!isRunning ? (
-            <Button size="sm" onClick={onStart} disabled={!webContainer}>
+            <Button size="sm" onClick={onStart} disabled={!webContainer || isRunning}>
               <Play className="h-4 w-4 mr-1" />
               Start
             </Button>
@@ -170,7 +187,7 @@ export function WebContainerPreview({
               <Button
                 size="sm"
                 variant="outline"
-                // onClick={onRestart}
+                onClick={onRestart}
               >
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Restart
@@ -178,7 +195,7 @@ export function WebContainerPreview({
               <Button
                 size="sm"
                 variant="destructive"
-                // onClick={onStop}
+                onClick={onStop}
               >
                 <Square className="h-4 w-4 mr-1" />
                 Stop
@@ -205,7 +222,12 @@ export function WebContainerPreview({
         {/* Preview */}
         <div className="flex-1 flex items-center justify-center bg-gray-50">
           {Url && installationPhase === "ready" ? (
-            <div className="w-full h-full bg-white">
+            <div className="w-full h-full bg-white relative">
+              {loadingState === "loading" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                </div>
+              )}
               <iframe
                 ref={iframeRef}
                 src={Url}
@@ -213,6 +235,7 @@ export function WebContainerPreview({
                 title="Preview"
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
+                style={{ visibility: loadingState === "loaded" ? "visible" : "hidden" }}
               />
             </div>
           ) : (
@@ -263,6 +286,9 @@ export function WebContainerPreview({
                             <p className="text-sm text-muted-foreground">
                               Running development server...
                             </p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              The preview may take 10–15 seconds to load after the server starts.
+                            </p>
                           </>
                         )}
                       </>
@@ -303,5 +329,6 @@ export function WebContainerPreview({
         </div>
       </div>
     </div>
+    </>
   );
 }

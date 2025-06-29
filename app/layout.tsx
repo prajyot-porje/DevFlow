@@ -28,13 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ClerkProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <ClientProviders>
-              {children}
-            </ClientProviders>
-          </ThemeProvider>
-        </ClerkProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ClerkProvider>
+            <ClientProviders>{children}</ClientProviders>
+          </ClerkProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface SidebarProps {
   historyOpen: boolean;
@@ -21,7 +21,21 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ historyOpen, setHistoryOpen }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isChatDetail = /^\/chat\/[^/]+$/.test(pathname) && ![
+    "/chat/projects",
+    "/chat/templates",
+    "/chat/settings"
+  ].includes(pathname);
+  const sidebarItems = [
+    { icon: Zap, label: "Generate", route: "/chat", active: pathname === "/chat" || isChatDetail },
+    { icon: History, label: "History", route: null, active: false },
+    { icon: Layers, label: "Projects", route: "/chat/projects", active: pathname === "/chat/projects" },
+    { icon: Palette, label: "Templates", route: "/chat/templates", active: pathname === "/chat/templates" },
+    { icon: Settings, label: "Settings", route: "/chat/settings", active: pathname === "/chat/settings" },
+  ];
+
   return (
     <div
       className={`${sidebarOpen ? "w-64" : "w-18"} transition-all duration-300 h-full ease-in-out border-r bg-card/50 backdrop-blur-sm flex-shrink-0`}
@@ -47,21 +61,14 @@ const Sidebar: React.FC<SidebarProps> = ({ historyOpen, setHistoryOpen }) => {
         </Button>
 
         <nav className="space-y-2">
-          {[
-            { icon: Zap, label: "Generate", active: true },
-            { icon: History, label: "History" },
-            { icon: Layers, label: "Projects" },
-            { icon: Palette, label: "Templates" },
-            { icon: Settings, label: "Settings" },
-          ].map((item, index) => (
+          {sidebarItems.map((item, index) => (
             <Button
               key={index}
               variant={item.active ? "default" : "ghost"}
               className={`w-full justify-start gap-3 transition-all duration-200 ${!sidebarOpen ? "px-2" : ""}`}
               onClick={() => {
                 if (item.label === "History") setHistoryOpen(!historyOpen);
-                if (item.label === "Projects") router.push("/chat/projects");
-                if (item.label === "Settings") router.push("/chat/settings");
+                else if (item.route) router.push(item.route);
               }}
             >
               <item.icon className="w-4 h-4" />

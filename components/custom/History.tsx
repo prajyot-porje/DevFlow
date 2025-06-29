@@ -1,94 +1,136 @@
-'use client'
-import React, { useState } from 'react'
-import { Card, CardContent } from '../ui/card'
-import { Badge } from '../ui/badge'
-import { Button } from '../ui/button'
-import Image from 'next/image'
+"use client"
+import type React from "react"
+import { Card, CardContent } from "../ui/card"
+import { Button } from "../ui/button"
+import { useQuery } from "convex/react"
+import { api } from "../../convex/_generated/api"
+import { useUser } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
+import {
+  FileText
+} from "lucide-react"
+import { iconColors, projectIcons } from "@/data/data"
+
 interface historyProps {
-    historyOpen: boolean;
-    setHistoryOpen: (open: boolean) => void;
+  historyOpen: boolean
+  setHistoryOpen: (open: boolean) => void
+}
+const getRandomIcon = (id: string) => {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i)
+    hash |= 0 
+  }
+  return Math.abs(hash) % projectIcons.length
+}
+const getRandomColor = (id: string) => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 7) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) % iconColors.length;
+};
+
+const formatTimeAgo = (timestamp: number) => {
+  const now = Date.now()
+  const diff = now - timestamp
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (days > 0) return `${days}d ago`
+  if (hours > 0) return `${hours}h ago`
+  if (minutes > 0) return `${minutes}m ago`
+  return "Just now"
 }
 
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  lastModified: Date;
-  preview: string;
-  tags: string[];
-}
+const History: React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) => {
+  const router = useRouter()
+  const { user } = useUser()
+  const convexUser = useQuery(api.users.getUserByUid, user?.id ? { uid: user.id } : "skip")
+  const workspaces = useQuery(
+    api.workspace.getRecentWorkspacesByUser,
+    convexUser?._id ? { userId: convexUser._id } : "skip",
+  )
+  const handleCardClick = (id: string) => {
+    router.push(`/chat/${id}`)
+  }
 
-
-const History : React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) =>  {
-      const [project] = useState<Project[]>([
-        {
-          id: "1",
-          name: "Landing Page",
-          description: "Modern landing page with hero section",
-          lastModified: new Date(Date.now() - 1000 * 60 * 30),
-          preview: "/placeholder.svg?height=200&width=300",
-          tags: ["React", "Tailwind", "Landing"],
-        },
-        {
-          id: "2",
-          name: "Dashboard",
-          description: "Analytics dashboard with charts",
-          lastModified: new Date(Date.now() - 1000 * 60 * 60 * 2),
-          preview: "/placeholder.svg?height=200&width=300",
-          tags: ["Dashboard", "Charts", "Analytics"],
-        },
-        {
-          id: "3",
-          name: "E-commerce",
-          description: "Product catalog with shopping cart",
-          lastModified: new Date(Date.now() - 1000 * 60 * 60 * 24),
-          preview: "/placeholder.svg?height=200&width=300",
-          tags: ["E-commerce", "React", "Shopping"],
-        },
-      ]);
   return (
-    <div>{historyOpen && (
-              <div className="w-80 border-l bg-card/50 backdrop-blur-sm animate-in slide-in-from-right-2 duration-300 h-full overflow-y-auto flex-shrink-0">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">Recent Projects</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setHistoryOpen(false)}>
-                      ×
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    {project.map((project) => (
-                      <Card key={project.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-3">
-                          <div className="flex gap-3">
-                            <div className="w-12 h-12 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                              <Image
-                                src={project.preview || "/placeholder.svg"}
-                                alt={project.name}
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm truncate">{project.name}</h4>
-                              <p className="text-xs text-muted-foreground truncate">{project.description}</p>
-                              <div className="flex gap-1 mt-2">
-                                {project.tags.slice(0, 2).map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="text-xs px-1 py-0">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+    <div>
+      {historyOpen && (
+        <div className="w-80 border-l bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 animate-in slide-in-from-right-2 duration-300 h-full overflow-y-auto flex-shrink-0">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="font-semibold text-lg">Recent Projects</h3>
+                <p className="text-sm text-muted-foreground">{workspaces?.length || 0} projects</p>
               </div>
-            )}</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setHistoryOpen(false)}
+                className="h-8 w-8 p-0 hover:bg-muted"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {workspaces?.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                    <FileText className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">No projects yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Start a new conversation to create your first project
+                  </p>
+                </div>
+              )}
+
+              {workspaces?.map((project) => {
+                const IconComponent = projectIcons[getRandomIcon(project._id)]
+                const colorClass = iconColors[getRandomColor(project._id)]
+
+                return (
+                  <Card
+                    key={project._id}
+                    onClick={() => handleCardClick(project._id)}
+                    className="cursor-pointer hover:shadow-md hover:border-primary/20 transition-all duration-200 group"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex gap-3">
+                        <div
+                          className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center ${colorClass} group-hover:scale-105 transition-transform duration-200`}
+                        >
+                          <IconComponent className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate mb-1 group-hover:text-primary transition-colors">
+                            {project.info?.title || "Untitled Project"}
+                          </h4>
+                          <p className="text-xs text-muted-foreground truncate mb-2 leading-relaxed">
+                            {project.info?.description || "No description available"}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground font-medium">
+                              {formatTimeAgo(project._creationTime)}
+                            </span>
+                            <div className="w-2 h-2 rounded-full bg-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

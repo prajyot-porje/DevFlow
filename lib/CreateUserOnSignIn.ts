@@ -5,10 +5,8 @@ import { useUser } from "@clerk/nextjs";
 import { useEffect  } from "react";
 
 export default function CreateUserOnSignIn() {
-
   const { user, isLoaded } = useUser();
   const createUser = useMutation(api.users.CreateUser);
-
   useEffect(() => {
     if (isLoaded && user) {
       createUser({
@@ -16,6 +14,7 @@ export default function CreateUserOnSignIn() {
         email: user.primaryEmailAddress?.emailAddress || "",
         image: user.imageUrl || "",
         uid: user.id,
+        
       });
     }
   }, [isLoaded, user, createUser]);

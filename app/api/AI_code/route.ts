@@ -1,17 +1,8 @@
 import { generateCodeResponse } from "@/configs/AiModel";
 import { NextResponse } from "next/server";
 
-type FileContent = {
-  code: string;
-};
+type ParsedResponse = Record<string, unknown>;
 
-type ParsedResponse = {
-  files?: Record<string, FileContent>;
-};
-
-/**
- * Safe JSON.parse with type fallback
- */
 function tryParseJson<T>(str: string): T | null {
   try {
     return JSON.parse(str) as T;
@@ -20,69 +11,112 @@ function tryParseJson<T>(str: string): T | null {
   }
 }
 
-/**
- * Attempts to extract a valid JSON object using various strategies
- */
+function cleanJsonString(str: string): string {
+  const startIndex = str.indexOf('{');
+  if (startIndex === -1) return str;
+  const endIndex = str.lastIndexOf('}');
+  if (endIndex === -1) return str;
+  
+  let cleaned = str.slice(startIndex, endIndex + 1);
+  cleaned = cleaned
+    .replace(/```json\s*/g, '') 
+    .replace(/```\s*/g, '') 
+    .replace(/,(\s*[}\]])/g, '$1') 
+    .replace(/\n\s*\n/g, '\n') 
+    .trim();
+  
+  return cleaned;
+}
+
+
 function extractJson(responseText: string): ParsedResponse {
-  // Try full parse
-  const parsed = tryParseJson<ParsedResponse>(responseText);
-  if (parsed && parsed.files) return parsed;
-
-  // Try ```json block
-  const blockMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
-  if (blockMatch) {
-    const blockParsed = tryParseJson<ParsedResponse>(blockMatch[1]);
-    if (blockParsed && blockParsed.files) return blockParsed;
+    const directParsed = tryParseJson<ParsedResponse>(responseText);
+  if (directParsed) {
+    return directParsed;
   }
-
-  // Try slicing between first and last braces
-  const start = responseText.indexOf("{");
-  const end = responseText.lastIndexOf("}");
-  if (start !== -1 && end !== -1 && end > start) {
-    const sliced = tryParseJson<ParsedResponse>(responseText.slice(start, end + 1));
-    if (sliced && sliced.files) return sliced;
+  
+  const cleaned = cleanJsonString(responseText);
+  
+  const cleanedParsed = tryParseJson<ParsedResponse>(cleaned);
+  if (cleanedParsed) {
+    return cleanedParsed;
   }
-
-  // Try extracting files object manually
-  const filesMatch = responseText.match(/"files"\s*:\s*({[\s\S]*})/);
-  if (filesMatch) {
-    const wrapped = `{"files":${filesMatch[1]}}`;
-    const manualParsed = tryParseJson<ParsedResponse>(wrapped);
-    if (manualParsed && manualParsed.files) return manualParsed;
+  
+  const blockMatches = responseText.match(/```json\s*([\s\S]*?)\s*```/g);
+  if (blockMatches) {
+    for (const match of blockMatches) {
+      const content = match.replace(/```json\s*/, '').replace(/\s*```/, '');
+      const blockParsed = tryParseJson<ParsedResponse>(content);
+      if (blockParsed) {
+        return blockParsed;
+      }
+    }
   }
+  
+  const jsonMatches = responseText.match(/\{[\s\S]*\}/g);
+  if (jsonMatches) {
+    const sortedMatches = jsonMatches.sort((a, b) => b.length - a.length);
+    for (const match of sortedMatches) {
+      const matchParsed = tryParseJson<ParsedResponse>(match);
+      if (matchParsed) {
+        return matchParsed;
+      }
+    }
+  }
+  
+  if (!responseText.includes('}') || !responseText.includes('{')) {
+    throw new Error("Response appears to be truncated or incomplete");
+  }
+  
+  const explanationMatch = responseText.match(/"description":\s*"([^"]*(?:\\.[^"]*)*)"/);
+  
+  if (explanationMatch) {
+    const fallbackResponse: ParsedResponse = {
+      description: explanationMatch[1],
+      files: {},
+      generatedFiles: [],
+      error: "Response was partially parsed due to formatting issues"
+    };
+    return fallbackResponse;
+  }
+  
+  throw new Error(`Failed to parse JSON from AI response. Response length: ${responseText.length}, First 500 chars: ${responseText.slice(0, 500)}`);
+}
 
-  throw new Error("Failed to parse valid JSON from AI response");
+
+function validateResponse(parsed: ParsedResponse): boolean {
+  if (!parsed || typeof parsed !== 'object') return false;
+  if (!('description' in parsed) || !('files' in parsed)) {
+    return false;
+  }
+  if (typeof parsed.files !== 'object' || parsed.files === null) {
+    return false;
+  }
+  return true;
 }
 
 export async function POST(request: Request) {
   try {
     const { prompt }: { prompt: string } = await request.json();
     const responseText: string = await generateCodeResponse(prompt);
-
-    console.log("AI response preview:", responseText.slice(0, 300));
-
-    let files: Record<string, FileContent> = {};
-
-    try {
-      const parsed = extractJson(responseText);
-      files = parsed.files ?? {};
-    } catch (parseError) {
-      console.error("Parsing error:", parseError);
-      return NextResponse.json(
-        {
-          error: "AI response is not valid JSON",
-          details: String(parseError),
-          sample: responseText.slice(0, 1000) + "...",
-        },
-        { status: 500 }
-      );
+    const parsedJson = extractJson(responseText);
+    
+    if (!validateResponse(parsedJson)) {
+      throw new Error("Invalid response structure from AI");
     }
-
-    return NextResponse.json({ files }, { status: 200 });
+    return NextResponse.json(parsedJson, { status: 200 });
+    
   } catch (err) {
-    console.error("Server error:", err);
+    console.error("💥 Error in POST handler:", err);
+    
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    
     return NextResponse.json(
-      { error: "Server error", message: String(err) },
+      {
+        error: "Failed to handle request",
+        message: errorMessage,
+        timestamp: new Date().toISOString(),
+      },
       { status: 400 }
     );
   }

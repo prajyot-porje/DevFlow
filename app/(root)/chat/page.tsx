@@ -19,11 +19,14 @@ import Sidebar from "@/components/custom/Sidebar";
 import Header from "@/components/custom/Header";
 import { TabsContent } from "@radix-ui/react-tabs";
 import { ChatMessage } from "@/data/Types";
-import { greetingMessage } from "@/data/data";
+import { greetingMessage, quickPrompts } from "@/data/data";
+import { LimitDialog } from "@/components/custom/LimitDialog";
 
 
 
 export default function DevFlow() {
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
+  const canStartConversation = useMutation(api.users.canStartConversation);
   const [message, setMessage] = useState<ChatMessage[]>([]);
   const user = useUser();
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +49,12 @@ export default function DevFlow() {
       return;
     }
     if (!input.trim()) return;
+
+    const result = await canStartConversation({ userId: userDetails._id });
+    if (!result.allowed) {
+      setLimitDialogOpen(true);
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: generateUniqueId(),
@@ -83,6 +92,8 @@ export default function DevFlow() {
   }
 
   return (
+    <>
+          <LimitDialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen} />
     <div className={`w-screen h-screen overflow-hidden `}>
       <div className="flex w-full h-full bg-background text-foreground overflow-hidden">
         {/* Sidebar */}
@@ -91,7 +102,7 @@ export default function DevFlow() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Header */}
-          <Header title="AI Code Generator" />
+            <Header title="DevFlow AI Code Studio" />
 
           <div className="flex-1 flex overflow-hidden">
             {/* Chat Area */}
@@ -203,12 +214,7 @@ export default function DevFlow() {
                   {/* Input Area */}
                   <div className="mt-4 space-y-4">
                     <div className="flex gap-2 flex-wrap">
-                      {[
-                        "Make a Todo App",
-                        "Build a Budget tracker website",
-                        "Simple E-commerce website",
-                        "Login form with validation",
-                      ].map((suggestion, index) => (
+                      {quickPrompts.map((suggestion, index) => (
                         <Button
                           key={index}
                           variant="outline"
@@ -260,5 +266,6 @@ export default function DevFlow() {
         </div>
       </div>
     </div>
+    </>
   );
 }

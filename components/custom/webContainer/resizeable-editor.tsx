@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -22,11 +21,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import {
-  vscDarkPlus,
-  vs,
-} from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -34,6 +28,15 @@ import {
 } from "@/components/ui/resizable";
 import { useTheme } from "next-themes";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { css } from "@codemirror/lang-css";
+import { html } from "@codemirror/lang-html";
+import { json } from "@codemirror/lang-json";
+import { markdown } from "@codemirror/lang-markdown";
+import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import { sublime } from "@uiw/codemirror-theme-sublime";
+import { EditorView } from "@codemirror/view";
 
 interface FileNode {
   name: string;
@@ -104,6 +107,8 @@ const getLanguageFromFile = (fileName: string): string => {
       return "scss";
     case "html":
       return "html";
+    case "yaml":
+      return "yaml";
     case "json":
       return "json";
     case "md":
@@ -212,6 +217,34 @@ function FileTreeNode({
   );
 }
 
+const getCodeMirrorExtensions = (language: string) => {
+  const extensions = [];
+  switch (language) {
+    case "javascript":
+      extensions.push(javascript());
+      break;
+    case "typescript":
+      extensions.push(javascript({ typescript: true }));
+      break;
+    case "css":
+      extensions.push(css());
+      break;
+    case "html":
+      extensions.push(html());
+      break;
+    case "json":
+      extensions.push(json());
+      break;
+    case "markdown":
+      extensions.push(markdown());
+      break;
+    default:
+      break;
+  }
+  extensions.push(EditorView.lineWrapping);
+  return extensions;
+};
+
 export function ResizableEditor({
   files,
   selectedFile,
@@ -226,50 +259,47 @@ export function ResizableEditor({
   const { theme } = useTheme();
   const [fontSize, setFontSize] = useState(14);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
-  const [useHighlighting, setUseHighlighting] = useState(true);
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const fileTree = useMemo(() => buildFileTree(files), [files]);
   const currentFile = files[activeTab];
   const language = getLanguageFromFile(activeTab);
+  const [unsavedCode, setUnsavedCode] = useState<string | null>(null);
+  const [showSavePopup, setShowSavePopup] = useState(false);
+  const codeMirrorRef = useRef<{ view?: EditorView } | null>(null);
 
   useEffect(() => {
     if (selectedFile && !openTabs.includes(selectedFile)) {
       setOpenTabs((prev) => [...prev, selectedFile]);
     }
     setActiveTab(selectedFile);
+    setUnsavedCode(null); 
+    setShowSavePopup(false);
   }, [selectedFile, openTabs]);
 
-  const handleTabClose = (fileName: string) => {
-    // Don't allow closing if it's the only tab
-    if (openTabs.length <= 1) return;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key.toLowerCase() === "s"
+      ) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line
+  }, [unsavedCode, activeTab, currentFile]);
 
+  const handleTabClose = (fileName: string) => {
+    if (openTabs.length <= 1) return;
     const newTabs = openTabs.filter((tab) => tab !== fileName);
     setOpenTabs(newTabs);
-
     if (activeTab === fileName) {
-      // Switch to the next available tab
       const currentIndex = openTabs.indexOf(fileName);
       const nextTab =
         newTabs[currentIndex] || newTabs[currentIndex - 1] || newTabs[0];
       setActiveTab(nextTab);
       onFileSelect(nextTab);
-    }
-  };
-
-  const handleCursorPositionChange = () => {
-    if (textareaRef.current) {
-      const textarea = textareaRef.current;
-      const text = textarea.value;
-      const cursorPos = textarea.selectionStart;
-
-      const lines = text.substring(0, cursorPos).split("\n");
-      const line = lines.length;
-      const column = lines[lines.length - 1].length + 1;
-
-      setCursorPosition({ line, column });
     }
   };
 
@@ -282,254 +312,252 @@ export function ResizableEditor({
   const handleDownloadProject = () => {
     downloadProjectAsZip(files);
   };
+  
+  const handleSave = () => {
+    if (unsavedCode !== null && currentFile) {
+      onFileChange(activeTab, unsavedCode);
+      setUnsavedCode(null);
+      setShowSavePopup(false);
+      if (codeMirrorRef.current && codeMirrorRef.current.view) {
+        codeMirrorRef.current.view.focus();
+      }
+    }
+  };
 
-  const getLineNumbers = (code: string) => {
-    const lines = code.split("\n");
-    return lines.map((_, index) => index + 1);
+  const handleCodeChange = (value: string) => {
+    if (value !== currentFile.code) {
+      setUnsavedCode(value);
+      setShowSavePopup(true);
+    } else {
+      setUnsavedCode(null);
+      setShowSavePopup(false);
+    }
   };
 
   return (
-    <ScrollArea className=" max-h-screen w-full overflow-y-auto hide-scrollbar  overflow-x-hidden">
-      <div className="min-w-full">
-        <ResizablePanelGroup
-          direction="horizontal"
-          className={`rounded-lg border-2 min-h-[79vh] border-gray-500 bg-background ${isFullscreen ? "fixed inset-0 z-50" : ""}`}
+    <div className="min-w-full">
+      <ResizablePanelGroup
+        direction="horizontal"
+        className={`border-2 min-h-[79vh] border-gray-500 bg-background ${isFullscreen ? "fixed inset-0 z-50" : ""}`}
+      >
+        {/* File Explorer */}
+        <ResizablePanel
+          defaultSize={20}
+          className="bg-card border-r max-w-1/2 min-w-1/12 flex flex-col"
         >
-          {/* File Explorer */}
-          <ResizablePanel
-            defaultSize={20}
-            className="bg-card border-r max-w-1/2 min-w-1/12 flex flex-col"
-          >
-            <div className="p-4 border-b">
-              <div className="flex items-center gap-2">
-                <Folder className="h-4 w-4" />
-                <span className="font-medium text-sm">Explorer</span>
-              </div>
+          <div className="p-4 border-b">
+            <div className="flex items-center gap-2">
+              <Folder className="h-4 w-4" />
+              <span className="font-medium text-sm">Explorer</span>
             </div>
-            <div className="flex-1 p-2">
-              <div className="space-y-1">
-                {[...fileTree]
-                  .sort((a, b) => {
-                    const aIsFolder = a.type === "folder";
-                    const bIsFolder = b.type === "folder";
+          </div>
+          <div className="flex-1 p-2">
+            <div className="space-y-1">
+              {[...fileTree]
+                .sort((a, b) => {
+                  const aIsFolder = a.type === "folder";
+                  const bIsFolder = b.type === "folder";
 
-                    if (aIsFolder === bIsFolder) {
-                      return a.name.localeCompare(b.name); // Alphabetical
-                    }
-                    return aIsFolder ? -1 : 1; // Folders first
-                  })
-                  .map((node) => (
-                    <FileTreeNode
-                      key={node.path}
-                      node={node}
-                      selectedFile={selectedFile}
-                      onFileSelect={onFileSelect}
-                      expandedFolders={expandedFolders}
-                      setExpandedFolders={setExpandedFolders}
-                    />
+                  if (aIsFolder === bIsFolder) {
+                    return a.name.localeCompare(b.name); 
+                  }
+                  return aIsFolder ? -1 : 1; 
+                })
+                .map((node) => (
+                  <FileTreeNode
+                    key={node.path}
+                    node={node}
+                    selectedFile={selectedFile}
+                    onFileSelect={onFileSelect}
+                    expandedFolders={expandedFolders}
+                    setExpandedFolders={setExpandedFolders}
+                  />
+                ))}
+            </div>
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle />
+
+        {/* Code Editor */}
+        <ResizablePanel className="flex-1 bg-card flex flex-col">
+          {currentFile ? (
+            <>
+              {/* Tabs */}
+              <div className="border-b bg-background/50 backdrop-blur">
+                <div className="flex items-center overflow-x-auto">
+                  {openTabs.map((fileName) => (
+                    <div
+                      key={fileName}
+                      className={`flex items-center gap-2 px-3 py-2 border-r cursor-pointer hover:bg-accent/50 transition-colors ${
+                        activeTab === fileName ? "bg-accent" : ""
+                      }`}
+                      onClick={() => {
+                        setActiveTab(fileName);
+                        onFileSelect(fileName);
+                      }}
+                    >
+                      <span className="text-sm truncate max-w-32">
+                        {fileName.split("/").pop()}
+                      </span>
+                      {openTabs.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-destructive/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTabClose(fileName);
+                          }}
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </div>
                   ))}
+                </div>
+
+                {/* Toolbar */}
+                <div className="flex items-center justify-between p-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {language}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={copyToClipboard}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDownloadProject}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ml-2"
+                      onClick={handleSave}
+                      disabled={unsavedCode === null}
+                    >
+                      Save
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() =>
+                            setFontSize(Math.max(10, fontSize - 1))
+                          }
+                        >
+                          Font Size: {fontSize}px (-)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            setFontSize(Math.min(24, fontSize + 1))
+                          }
+                        >
+                          Font Size: {fontSize}px (+)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="h-4 w-4" />
+                      ) : (
+                        <Maximize2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Editor Content */}
+              <div className="flex min-h-[64vh] w-full">
+                {/* Code Area */}
+                <div className="flex-1 relative h-full">
+                  <ScrollArea className="h-[64vh] w-full">
+                    <CodeMirror
+                      ref={codeMirrorRef}
+                      value={unsavedCode !== null ? unsavedCode : currentFile.code}
+                      height="100%"
+                      theme={theme === "dark" ? vscodeDark : sublime}
+                      extensions={getCodeMirrorExtensions(language)}
+                      onChange={handleCodeChange}
+                      basicSetup={{
+                        lineNumbers: true,
+                        highlightActiveLine: true,
+                        foldGutter: true,
+                        autocompletion: true,
+                        indentOnInput: true,
+                      }}
+                      style={{
+                        fontSize: `${fontSize}px`,
+                        fontFamily:
+                          'Monaco, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Consolas, "Courier New", monospace',
+                        minHeight: "64vh",
+                        height: "100%",
+                        background: "transparent",
+                        overflowX: "hidden",
+                      }}
+                      editable={true}
+                      spellCheck={false}
+                    />
+                  </ScrollArea>
+                  {showSavePopup && unsavedCode !== null && (
+                    <div className="fixed left-1/2 bottom-8 z-50 transform -translate-x-1/2 bg-background border shadow-lg px-6 py-3 rounded flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
+                      <span className="text-sm">You have unsaved changes.</span>
+                      <Button
+                        size="sm"
+                        onClick={handleSave}
+                        className="px-4"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Bar */}
+              <div className="h-6 bg-muted/50 border-t flex items-center justify-between px-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4">
+                  <span>{language.toUpperCase()}</span>
+                  <span>UTF-8</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span>Spaces: 2</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Type className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground">
+                  Select a file to start editing
+                </p>
               </div>
             </div>
-          </ResizablePanel>
-
-          <ResizableHandle />
-
-          {/* Code Editor */}
-          <ResizablePanel className="flex-1  bg-card flex flex-col">
-            {currentFile ? (
-              <>
-                {/* Tabs */}
-                <div className="border-b bg-background/50 backdrop-blur">
-                  <div className="flex items-center overflow-x-auto">
-                    {openTabs.map((fileName) => (
-                      <div
-                        key={fileName}
-                        className={`flex items-center gap-2 px-3 py-2 border-r cursor-pointer hover:bg-accent/50 transition-colors ${
-                          activeTab === fileName ? "bg-accent" : ""
-                        }`}
-                        onClick={() => {
-                          setActiveTab(fileName);
-                          onFileSelect(fileName);
-                        }}
-                      >
-                        <span className="text-sm truncate max-w-32">
-                          {fileName.split("/").pop()}
-                        </span>
-                        {openTabs.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0 hover:bg-destructive/20"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTabClose(fileName);
-                            }}
-                          >
-                            ×
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Toolbar */}
-                  <div className="flex items-center justify-between p-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {language}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={copyToClipboard}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDownloadProject}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem
-                            onClick={() => setUseHighlighting(!useHighlighting)}
-                          >
-                            Syntax Highlighting:{" "}
-                            {useHighlighting ? "On" : "Off"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setFontSize(Math.max(10, fontSize - 1))
-                            }
-                          >
-                            Font Size: {fontSize}px (-)
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setFontSize(Math.min(24, fontSize + 1))
-                            }
-                          >
-                            Font Size: {fontSize}px (+)
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsFullscreen(!isFullscreen)}
-                      >
-                        {isFullscreen ? (
-                          <Minimize2 className="h-4 w-4" />
-                        ) : (
-                          <Maximize2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Editor Content */}
-                <div className="flex min-h-[64vh] w-full">
-                  {/* Line Numbers */}
-                  <div
-                    className={`w-12 bg-muted/30 border-r text-right pr-2 py-4 text-xs font-mono select-none ${
-                      theme === "dark" ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    {getLineNumbers(currentFile.code).map((lineNum) => (
-                      <div key={lineNum} className="leading-6">
-                        {lineNum}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Code Area */}
-                  <div className="flex-1 relative">
-                    {useHighlighting && language !== "text" ? (
-                      <SyntaxHighlighter
-                        language={language}
-                        style={theme === "dark" ? vscDarkPlus : vs}
-                        customStyle={{
-                          margin: 0,
-                          padding: "16px",
-                          fontSize: `${fontSize}px`,
-                          fontFamily:
-                            'Monaco, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Consolas, "Courier New", monospace',
-                          lineHeight: "1.5",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                        }}
-                        showLineNumbers={false}
-                      >
-                        {currentFile.code}
-                      </SyntaxHighlighter>
-                    ) : (
-                      <textarea
-                        ref={textareaRef}
-                        value={currentFile.code}
-                        onChange={(e) => {
-                          onFileChange(activeTab, e.target.value);
-                          handleCursorPositionChange();
-                        }}
-                        onSelect={handleCursorPositionChange}
-                        onKeyUp={handleCursorPositionChange}
-                        className={`w-full p-4 bg-transparent border-0  resize-none focus:outline-none font-mono leading-6 ${
-                          theme === "dark"
-                            ? "bg-gray-900 text-gray-100"
-                            : "bg-white text-gray-900"
-                        }`}
-                        style={{
-                          fontSize: `${fontSize}px`,
-                          fontFamily:
-                            'Monaco, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Consolas, "Courier New", monospace',
-                          tabSize: 2,
-                        }}
-                        spellCheck={false}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Status Bar */}
-                <div className="h-6 bg-muted/50 border-t flex items-center justify-between px-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-4">
-                    <span>
-                      Ln {cursorPosition.line}, Col {cursorPosition.column}
-                    </span>
-                    <span>{language.toUpperCase()}</span>
-                    <span>UTF-8</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span>Spaces: 2</span>
-                    <span>Highlighting: {useHighlighting ? "On" : "Off"}</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Type className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">
-                    Select a file to start editing
-                  </p>
-                </div>
-              </div>
-            )}
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
-    </ScrollArea>
+          )}
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
   );
 }

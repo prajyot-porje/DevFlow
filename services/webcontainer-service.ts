@@ -1,10 +1,9 @@
-// webcontainer-service.ts
 import { WebContainer } from '@webcontainer/api';
 
 class WebContainerService {
   private static instance: WebContainerService;
   private container: WebContainer | null = null;
-  private isBooting: boolean = false;
+  private isBooting = false;
   private bootPromise: Promise<WebContainer> | null = null;
 
   private constructor() {}
@@ -17,20 +16,12 @@ class WebContainerService {
   }
 
   public async getContainer(): Promise<WebContainer> {
-    // If already booted, return existing container
-    if (this.container) {
-      return this.container;
-    }
+    if (this.container) return this.container;
+    if (this.isBooting && this.bootPromise) return this.bootPromise;
 
-    // If currently booting, return the existing promise
-    if (this.isBooting && this.bootPromise) {
-      return this.bootPromise;
-    }
-
-    // Boot new container
     this.isBooting = true;
     this.bootPromise = this.bootContainer();
-    
+
     try {
       this.container = await this.bootPromise;
       this.isBooting = false;
@@ -53,11 +44,6 @@ class WebContainerService {
   public isReady(): boolean {
     return this.container !== null && !this.isBooting;
   }
-
-  // Helper method to sanitize file paths for WebContainer
-
-    
-   
 }
 
 export default WebContainerService;
