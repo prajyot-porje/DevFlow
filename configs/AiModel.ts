@@ -45,7 +45,7 @@ export async function generateCodeResponse(prompt: string): Promise<string> {
   const selectedModel = typeof window !== "undefined"
     ? localStorage.getItem("ai-model") || "gemini-2.5-flash"
     : "gemini-2.5-flash";
-  const fallbackModel =
+  const fallbackModel = 
     selectedModel === "gemini-2.5-flash-preview-04-17"
       ? "gemini-2.5-flash"
       : "gemini-2.5-flash-preview-04-17";
