@@ -269,7 +269,7 @@ export default function DevFlow() {
     // </>
     <div className="h-screen w-screen overflow-hidden bg-white text-gray-400 flex justify-center items-center text-center text-2xl">
         DevFlow is currently rebuilding and will be back soon. Expected return:
-        August 1.
+        August 1 2025.
     </div>
   );
 }
