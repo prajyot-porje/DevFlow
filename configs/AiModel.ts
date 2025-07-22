@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-const chatModel = "gemini-2.5-flash-preview-04-17";
+const chatModel = "gemini-2.5-flash-lite-preview-06-17";
 
 const chatConfig = {
   responseMimeType: "application/json",
@@ -46,9 +46,9 @@ export async function generateCodeResponse(prompt: string): Promise<string> {
     ? localStorage.getItem("ai-model") || "gemini-2.5-flash"
     : "gemini-2.5-flash";
   const fallbackModel = 
-    selectedModel === "gemini-2.5-flash-preview-04-17"
+    selectedModel === "gemini-2.5-flash-lite-preview-06-17"
       ? "gemini-2.5-flash"
-      : "gemini-2.5-flash-preview-04-17";
+      : "gemini-2.5-flash-lite-preview-06-17";
 
   async function tryGenerate(model: string) {
     const contents = [{ role: "user", parts: [{ text: prompt }] }];
