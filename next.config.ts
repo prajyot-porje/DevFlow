@@ -22,6 +22,9 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["img.clerk.com"],
   },
+  env: {
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  },
 };
 
 export default nextConfig;

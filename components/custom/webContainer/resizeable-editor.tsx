@@ -265,6 +265,7 @@ export function ResizableEditor({
   const [unsavedCode, setUnsavedCode] = useState<string | null>(null);
   const [showSavePopup, setShowSavePopup] = useState(false);
   const codeMirrorRef = useRef<{ view?: EditorView } | null>(null);
+  const [streamingFile, setStreamingFile] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedFile && !openTabs.includes(selectedFile)) {
@@ -333,6 +334,25 @@ export function ResizableEditor({
       setShowSavePopup(false);
     }
   };
+
+  useEffect(() => {
+    if (streamingFile && files[streamingFile]) {
+      const lines = files[streamingFile].code.split("\n");
+      let index = 0;
+
+      const interval = setInterval(() => {
+        if (index < lines.length) {
+          setUnsavedCode((prev) => (prev || "") + lines[index] + "\n");
+          index++;
+        } else {
+          clearInterval(interval);
+          setStreamingFile(null);
+        }
+      }, 100); // Adjust delay for streaming effect
+
+      return () => clearInterval(interval);
+    }
+  }, [streamingFile, files]);
 
   return (
     <div className="min-w-full">
