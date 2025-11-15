@@ -19,9 +19,6 @@ function tryParseJson<T>(str: string): T | null {
   }
 }
 
-/**
- * Clean up AI response from extra markers, ```json blocks, etc.
- */
 function cleanJsonString(str: string): string {
   const startIndex = str.indexOf("{");
   const endIndex = str.lastIndexOf("}");
