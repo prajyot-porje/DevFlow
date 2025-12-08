@@ -1,0 +1,25 @@
+
+> devflow@0.1.0 build
+> next build
+
+   ▲ Next.js 15.2.6
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/11) ...
+Error occurred prerendering page "/chat/projects". Read more: https://nextjs.org/docs/messages/prerender-error
+Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+    at Object.throwMissingPublishableKeyError (/vercel/sandbox/primary/.next/server/chunks/541.js:70:1487)
+    at /vercel/sandbox/primary/.next/server/chunks/541.js:23:78087
+    at nL (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:46773)
+    at nF (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:48548)
+    at nq (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:67434)
+    at nH (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:65009)
+    at nU (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:47125)
+    at nF (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:48594)
+    at nq (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:67434)
+    at nH (/vercel/sandbox/primary/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:76:65009)
+Export encountered an error on /(root)/chat/projects/page: /chat/projects, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null
