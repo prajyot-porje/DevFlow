@@ -1,179 +1,53 @@
-import { generateCodeResponse } from "@/configs/AiModel";
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
-type ParsedResponse = {
-  description?: string;
-  files?: Record<string, { code: string }>;
-  generated_files?: string[];
-  [key: string]: unknown;
-};
+export const runtime = "nodejs";
 
-/**
- * Safely parse JSON, return null if fails
- */
-function tryParseJson<T>(str: string): T | null {
+const client = new OpenAI({
+  baseURL: "https://router.huggingface.co/v1",
+  apiKey: process.env.HF_TOKEN,
+});
+
+function extractJSON(text: string) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const clean = fenced ? fenced[1] : text;
+
+  const start = clean.indexOf("{");
+  const end = clean.lastIndexOf("}");
+  if (start === -1 || end === -1) {
+    throw new Error("No JSON found in response");
+  }
+
+  return clean.slice(start, end + 1);
+}
+
+export async function POST(req: Request) {
   try {
-    return JSON.parse(str) as T;
-  } catch {
-    return null;
-  }
-}
+    const { prompt } = await req.json();
 
-function cleanJsonString(str: string): string {
-  const startIndex = str.indexOf("{");
-  const endIndex = str.lastIndexOf("}");
-  if (startIndex === -1 || endIndex === -1) return str;
+    const completion = await client.chat.completions.create({
+      model: "Qwen/Qwen2.5-Coder-7B-Instruct:nscale",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.15,
+      max_tokens: 4096,
+    });
 
-  let cleaned = str.slice(startIndex, endIndex + 1);
-  cleaned = cleaned
-    .replace(/```json\s*/g, "")
-    .replace(/```\s*/g, "")
-    .replace(/,(\s*[}\]])/g, "$1")
-    .replace(/\n\s*\n/g, "\n")
-    .trim();
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) throw new Error("Empty model response");
 
-  return cleaned;
-}
+    const jsonText = extractJSON(raw);
+    const parsed = JSON.parse(jsonText);
 
-/**
- * Extract JSON safely from AI response
- */
-function extractJson(responseText: string): ParsedResponse {
-  const directParsed = tryParseJson<ParsedResponse>(responseText);
-  if (directParsed) return directParsed;
+    return NextResponse.json(parsed);
+} catch (err: unknown) {
+  const message =
+    err instanceof Error ? err.message : "Unknown AI_CODE_ERROR";
 
-  const cleaned = cleanJsonString(responseText);
-  const cleanedParsed = tryParseJson<ParsedResponse>(cleaned);
-  if (cleanedParsed) return cleanedParsed;
+  console.error("AI_CODE_ERROR:", message);
 
-  const blockMatches = responseText.match(/```json\s*([\s\S]*?)\s*```/g);
-  if (blockMatches) {
-    for (const match of blockMatches) {
-      const content = match.replace(/```json\s*/, "").replace(/\s*```/, "");
-      const blockParsed = tryParseJson<ParsedResponse>(content);
-      if (blockParsed) return blockParsed;
-    }
-  }
-
-  const jsonMatches = responseText.match(/\{[\s\S]*\}/g);
-  if (jsonMatches) {
-    const sortedMatches = jsonMatches.sort((a, b) => b.length - a.length);
-    for (const match of sortedMatches) {
-      const matchParsed = tryParseJson<ParsedResponse>(match);
-      if (matchParsed) return matchParsed;
-    }
-  }
-
-  throw new Error(
-    `Failed to parse JSON from AI response. Response length: ${responseText.length}, First 500 chars: ${responseText.slice(
-      0,
-      500
-    )}`
+  return NextResponse.json(
+    { error: message },
+    { status: 500 }
   );
 }
-
-/**
- * Normalize AI response to always { "/path": { code: "..." } }
- */
-function normalizeFiles(raw: ParsedResponse): Record<string, { code: string }> {
-  if (!raw) return {};
-
-  // Case 1: Expected structure
-  if (
-    raw.files &&
-    typeof raw.files === "object" &&
-    !Array.isArray(raw.files)
-  ) {
-    return raw.files as Record<string, { code: string }>;
-  }
-
-  // Case 2: Array of files [{ filename, content }]
-  if (Array.isArray(raw.files)) {
-    const files: Record<string, { code: string }> = {};
-    for (const f of raw.files) {
-      if (
-        f &&
-        typeof f === "object" &&
-        "filename" in f &&
-        "content" in f &&
-        typeof (f as Record<string, unknown>).filename === "string" &&
-        typeof (f as Record<string, unknown>).content === "string"
-      ) {
-        const fname = (f as Record<string, unknown>).filename as string;
-        const content = (f as Record<string, unknown>).content as string;
-        files[fname] = { code: content };
-      }
-    }
-    return files;
-  }
-
-  // Case 3: Malformed / legacy like {"0": { filename, content }} or { key: { code } }
-  const files: Record<string, { code: string }> = {};
-  for (const key in raw) {
-    const val = raw[key];
-    if (val && typeof val === "object") {
-      const obj = val as Record<string, unknown>;
-      if (
-        "filename" in obj &&
-        "content" in obj &&
-        typeof obj.filename === "string" &&
-        typeof obj.content === "string"
-      ) {
-        files[obj.filename as string] = { code: obj.content as string };
-      } else if ("code" in obj && typeof obj.code === "string") {
-        files[key] = { code: obj.code as string };
-      }
-    }
-  }
-  return files;
-}
-
-/**
- * Validate parsed response
- */
-function validateResponse(parsed: ParsedResponse): boolean {
-  if (!parsed || typeof parsed !== "object") return false;
-  if (!("description" in parsed) || !("files" in parsed)) return false;
-  if (typeof parsed.files !== "object" || parsed.files === null) return false;
-  return true;
-}
-
-export async function POST(request: Request) {
-  try {
-    const { prompt }: { prompt: string } = await request.json();
-
-    // Generate AI code
-    const responseText: string = await generateCodeResponse(prompt);
-
-    // Parse JSON safely
-    const parsedJson = extractJson(responseText);
-
-    // Normalize files
-    const files = normalizeFiles(parsedJson);
-    parsedJson.files = files;
-
-    // Optional sanity check
-    if (!files || Object.keys(files).length === 0) {
-      throw new Error("AI returned no valid files. Possibly invalid response.");
-    }
-    if (!validateResponse(parsedJson)) {
-      throw new Error("Invalid response structure from AI");
-    }
-
-    // Ensure generated_files array exists
-    parsedJson.generated_files = parsedJson.generated_files || Object.keys(files);
-
-    return NextResponse.json(parsedJson, { status: 200 });
-  } catch (err) {
-    console.error("💥 Error in POST handler:", err);
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      {
-        error: "Failed to handle request",
-        message: errorMessage,
-        timestamp: new Date().toISOString(),
-      },
-      { status: 400 }
-    );
-  }
 }

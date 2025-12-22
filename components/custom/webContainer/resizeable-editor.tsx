@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EditorView } from "@uiw/react-codemirror";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +38,8 @@ import { json } from "@codemirror/lang-json";
 import { markdown } from "@codemirror/lang-markdown";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { sublime } from "@uiw/codemirror-theme-sublime";
-import { EditorView } from "@codemirror/view";
+import type { ReactCodeMirrorRef } from "@uiw/react-codemirror";
+
 
 interface FileNode {
   name: string;
@@ -192,7 +195,7 @@ function FileTreeNode({
             )}
           </div>
         ) : (
-          <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <File className="h-4 w-4 text-muted-foreground " />
         )}
 
         <span className="text-sm truncate flex-1 select-none">{node.name}</span>
@@ -219,6 +222,7 @@ function FileTreeNode({
 
 const getCodeMirrorExtensions = (language: string) => {
   const extensions = [];
+
   switch (language) {
     case "javascript":
       extensions.push(javascript());
@@ -241,9 +245,11 @@ const getCodeMirrorExtensions = (language: string) => {
     default:
       break;
   }
-  extensions.push(EditorView.lineWrapping);
+
   return extensions;
 };
+
+
 
 export function ResizableEditor({
   files,
@@ -264,7 +270,7 @@ export function ResizableEditor({
   const language = getLanguageFromFile(activeTab);
   const [unsavedCode, setUnsavedCode] = useState<string | null>(null);
   const [showSavePopup, setShowSavePopup] = useState(false);
-  const codeMirrorRef = useRef<{ view?: EditorView } | null>(null);
+  const codeMirrorRef = useRef<ReactCodeMirrorRef | null>(null);
   const [streamingFile, setStreamingFile] = useState<string | null>(null);
 
   useEffect(() => {
@@ -514,31 +520,34 @@ export function ResizableEditor({
                 <div className="flex-1 relative h-full">
                   <ScrollArea className="h-[64vh] w-full">
                     <CodeMirror
-                      ref={codeMirrorRef}
-                      value={unsavedCode !== null ? unsavedCode : currentFile.code}
-                      height="100%"
-                      theme={theme === "dark" ? vscodeDark : sublime}
-                      extensions={getCodeMirrorExtensions(language)}
-                      onChange={handleCodeChange}
-                      basicSetup={{
-                        lineNumbers: true,
-                        highlightActiveLine: true,
-                        foldGutter: true,
-                        autocompletion: true,
-                        indentOnInput: true,
-                      }}
-                      style={{
-                        fontSize: `${fontSize}px`,
-                        fontFamily:
-                          'Monaco, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Consolas, "Courier New", monospace',
-                        minHeight: "64vh",
-                        height: "100%",
-                        background: "transparent",
-                        overflowX: "hidden",
-                      }}
-                      editable={true}
-                      spellCheck={false}
-                    />
+                       ref={codeMirrorRef}
+  value={unsavedCode !== null ? unsavedCode : currentFile.code}
+  height="100%"
+  theme={theme === "dark" ? vscodeDark : sublime}
+  extensions={[
+    ...getCodeMirrorExtensions(language),
+    EditorView.lineWrapping, // ✅ correct place
+  ]}
+  onChange={handleCodeChange}
+  basicSetup={{
+    lineNumbers: true,
+    highlightActiveLine: true,
+    foldGutter: true,
+    autocompletion: true,
+    indentOnInput: true,
+  }}
+  style={{
+    fontSize: `${fontSize}px`,
+    fontFamily:
+      'Monaco, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Consolas, "Courier New", monospace',
+    minHeight: "64vh",
+    height: "100%",
+    background: "transparent",
+    overflowX: "hidden",
+  }}
+  editable={true}
+  spellCheck={false}
+/>
                   </ScrollArea>
                   {showSavePopup && unsavedCode !== null && (
                     <div className="fixed left-1/2 bottom-8 z-50 transform -translate-x-1/2 bg-background border shadow-lg px-6 py-3 rounded flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
