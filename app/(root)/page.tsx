@@ -1,90 +1,31 @@
 "use client";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Sparkles,
   Code,
-  Star,
-  Users,
   Palette,
   Download,
   Shield,
-  Rocket,
-  TrendingUp,
-  Send,
+  ArrowRight,
+  Zap,
+  Lightbulb,
+  Code2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MessageContext } from "@/context/MessageContext";
-import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { GetUserDetails } from "@/hooks/GetUserDetails";
-import { features } from "@/data/data";
 import { useTheme } from "next-themes";
-
 import { Moon, Sun } from "lucide-react";
-import { LimitDialog } from "@/components/custom/LimitDialog";
-
-function generateUniqueId() {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
 
 export default function LandingPage() {
-  const [userInput, setuserInput] = useState("");
-  const { setMessages } = useContext(MessageContext);
-  const userDetails = GetUserDetails();
-  const { user } = useUser();
-  const CreateWorkspace = useMutation(api.workspace.CreateWorkspace);
   const { theme, setTheme } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
-  const [activeFeature, setActiveFeature] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
-  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
-  const canStartConversation = useMutation(api.users.canStartConversation);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  const OnGenerate = async (input: string) => {
-    if (!user?.id) {
-      router.push("/sign-in");
-      return;
-    }
-    if (!userDetails || !userDetails._id) {
-      alert("User details not loaded. Please try again in a moment.");
-      return;
-    }
-
-    const result = await canStartConversation({ userId: userDetails._id });
-    if (!result.allowed) {
-      setLimitDialogOpen(true);
-      return;
-    }
-
-    const msg = {
-      id: generateUniqueId(),
-      type: "user",
-      content: input,
-      timestamp: Date.now(),
-    };
-    setIsTyping(true);
-    setMessages(msg);
-
-    const workspaceID = await CreateWorkspace({
-      user: userDetails._id,
-      message: msg,
-    });
-    const encodedMessage = encodeURIComponent(input);
-    router.push(`/chat/${workspaceID}?message=${encodedMessage}`);
-  };
-
   useEffect(() => {
     setIsVisible(true);
-    const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % 3);
-    }, 3000);
+    const interval = setInterval(() => {}, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -94,45 +35,37 @@ export default function LandingPage() {
 
   return (
     <>
-      <LimitDialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen} />
-
       <div className="min-h-screen bg-background text-foreground overflow-hidden">
-        {/* Navigation */}
-        <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+        <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-[min(95%,1100px)] px-6 md:px-10 lg:px-12 py-4 rounded-2xl bg-background/40 backdrop-blur-xl border border-foreground/10 shadow-lg">
+          <div className="flex items-center justify-between gap-8 w-full">
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 bg-linear-to-br from-slate-900 to-slate-700 dark:from-blue-400 dark:to-cyan-400 rounded-md flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white dark:text-slate-900" />
               </div>
-              <span className="font-bold text-xl">DevFlow</span>
+              <span className="font-bold text-lg tracking-tight">DevFlow</span>
             </div>
 
-            <div className="hidden md:flex items-center gap-8">
-              <a
-                href="#try-now"
-                className="text-sm hover:text-primary transition-colors"
-              >
-                Try Now
-              </a>
+            <div className="hidden lg:flex items-center gap-8">
               <a
                 href="#features"
-                className="text-sm hover:text-primary transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Features
               </a>
               <a
                 href="#how-it-works"
-                className="text-sm hover:text-primary transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                How it Works
+                How it works
               </a>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 pl-8 border-l border-foreground/10">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="rounded-full w-9 h-9 p-0"
               >
                 {mounted && theme === "dark" ? (
                   <Sun className="w-4 h-4" />
@@ -142,331 +75,379 @@ export default function LandingPage() {
               </Button>
               <Button
                 size="sm"
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                 onClick={() => router.push("/chat")}
+                className="rounded-full bg-foreground text-background hover:bg-foreground/90"
               >
-                Get Started
+                Start Building
               </Button>
             </div>
           </div>
         </nav>
 
-        {/* Hero Section */}
-        <section className="pt-32 pb-20 px-4">
-          <div className="container mx-auto text-center">
+        <section className="pt-40 pb-32 px-4">
+          <div className="container mx-auto max-w-6xl">
             <div
               className={`transition-all duration-1000 ${
                 isVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-10"
-              }`}
+              } grid lg:grid-cols-2 gap-8 items-center`}
             >
-              <Badge variant="secondary" className="mb-6 px-4 py-2 text-sm">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Powered by Advanced AI
-              </Badge>
+              <div>
+                <h1 className="text-5xl md:text-7xl lg:text-7xl font-bold text-balance mb-6 leading-[1.05]">
+                  Turn ideas into
+                  <span className="block bg-linear-to-r from-slate-600 to-slate-400 dark:from-blue-400 dark:via-cyan-400 dark:to-blue-500 bg-clip-text text-transparent">
+                    polished interfaces
+                  </span>
+                </h1>
 
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                Build Beautiful UIs
-                <br />
-                <span className="text-foreground">with AI Magic</span>
-              </h1>
+                <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-6 leading-relaxed">
+                  Describe what you want to build and let AI craft
+                  production-ready components in seconds.
+                </p>
 
-              <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-                Transform your ideas into production-ready React Projects in
-                seconds. No more starting from scratch.
-              </p>
-
-              <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>Students </span>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => router.push("/chat")}
+                    className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-foreground text-background font-medium text-base transition-all duration-300 hover:shadow-lg hover:shadow-foreground/20 active:scale-95"
+                  >
+                    <span>Try it now</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  <span>4.9/5 Rating</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Code className="w-4 h-4" />
-                  <span id="try-now">Easy Components Generation</span>
-                </div>
-              </div>
-            </div>
 
-            {/*  Chat Section */}
-            <div className="max-w-4xl flex flex-col justify-center items-center mx-auto mt-24">
-              <Card className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-600/5" />
-                <CardContent className="p-8">
-                  <div className="flex gap-8">
-                    {/* Chat Input */}
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-center gap-3 mb-6">
-                        <div className="flex justify-center items-center flex-col text-center  mb-2">
-                          <h2 className="text-3xl md:text-5xl font-bold mb-4">
-                            Try it
-                            <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                              {" "}
-                              right now
-                            </span>
-                          </h2>
-                          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Describe what you want to build and watch the magic
-                            happen
-                          </p>
-                        </div>
+                <div className="mt-12 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-foreground/5">
+                    <Zap className="w-5 h-5" />
+                    <div>
+                      <div className="text-sm font-semibold">
+                        Lightning Fast
                       </div>
-
-                      <div className="flex flex-col items-center justify-center min-h-[200px]">
-                        <div className="relative ">
-                          <Textarea
-                            placeholder="e.g., Create a modern pricing card with gradient background, hover effects, and a call-to-action button..."
-                            value={userInput}
-                            onChange={(e) => setuserInput(e.target.value)}
-                            className="h-28 w-[700px] resize-none"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                OnGenerate(userInput);
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            className="absolute right-2 bottom-2 h-8 w-8 p-0"
-                            onClick={() => OnGenerate(userInput)}
-                            disabled={!userInput.trim() || isTyping}
-                          >
-                            {isTyping ? (
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <Send className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-
-                        {isTyping && (
-                          <div className="flex items-center mt-4 gap-2 text-sm text-muted-foreground animate-in slide-in-from-bottom-2">
-                            <div className="flex gap-1">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-                              <div
-                                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.1s" }}
-                              />
-                              <div
-                                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.2s" }}
-                              />
-                            </div>
-                            <span>AI is thinking... Redirecting to app...</span>
-                          </div>
-                        )}
+                      <div className="text-xs text-muted-foreground">
+                        Seconds, not hours
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-20 px-4 bg-muted/20">
-          <div className="container mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-bold mb-4">
-                Everything you need to
-                <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                  {" "}
-                  build faster
-                </span>
-              </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Powerful features designed to accelerate your development
-                workflow
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8 mb-16">
-              {features.map((feature, index) => (
-                <Card
-                  key={index}
-                  className={`relative overflow-hidden transition-all duration-500 hover:scale-105 cursor-pointer ${
-                    activeFeature === index ? "ring-2 ring-primary" : ""
-                  }`}
-                  onClick={() => setActiveFeature(index)}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-600/5" />
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
-                      <feature.icon className="w-6 h-6 text-white" />
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-foreground/5">
+                    <Shield className="w-5 h-5" />
+                    <div>
+                      <div className="text-sm font-semibold">
+                        Production Ready
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Deployable code
+                      </div>
                     </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-foreground/5">
+                    <Palette className="w-5 h-5" />
+                    <div>
+                      <div className="text-sm font-semibold">Customizable</div>
+                      <div className="text-xs text-muted-foreground">
+                        Style it your way
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-foreground/5 sm:hidden">
+                    <Code2 className="w-5 h-5" />
+                    <div>
+                      <div className="text-sm font-semibold">
+                        Developer Focused
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Built for real workflows
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="hidden lg:block">
+                <Card className="p-6 border-2 border-foreground/10 shadow-lg">
+                  <CardHeader>
+                    <div className="w-full flex items-center justify-between">
+                      <CardTitle className="text-lg">Live Preview</CardTitle>
+                      <div className="text-xs text-muted-foreground">
+                        AI • production-ready
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                      {feature.description}
-                    </p>
-                    <div className="bg-muted/50 rounded-lg p-3 text-sm font-mono">
-                      {feature.demo}
+                    <div className="h-44 bg-linear-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-md flex items-center justify-center mb-4 p-3">
+                      <div className="w-full h-full rounded-md bg-background/80 border border-foreground/5 p-3 flex flex-col">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center">
+                            <Sparkles className="w-4 h-4 text-foreground" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold">
+                              Compact Header
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Short subtitle
+                            </div>
+                          </div>
+                          <div className="ml-auto text-xs text-muted-foreground">
+                            v1
+                          </div>
+                        </div>
+
+                        <div className="flex-1 flex items-center justify-between mt-3">
+                          <div className="flex-1 pr-3">
+                            <div className="text-sm font-medium">
+                              Project Title
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              A concise description of this component preview.
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button className="px-2 py-1 rounded-md bg-foreground text-background text-xs">
+                              Edit
+                            </button>
+                            <button className="px-2 py-1 rounded-md border border-foreground/5 text-xs">
+                              View
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-3">
+                          <span className="px-2 py-1 bg-muted/30 rounded">
+                            #ui
+                          </span>
+                          <span className="px-2 py-1 bg-muted/30 rounded">
+                            #components
+                          </span>
+                          <span className="ml-auto">Light / Dark</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mb-3">
+                      <div className="text-xs font-mono bg-muted/50 rounded px-2 py-1">
+                        Button
+                      </div>
+                      <div className="text-xs font-mono bg-muted/50 rounded px-2 py-1">
+                        Card
+                      </div>
+                      <div className="text-xs font-mono bg-muted/50 rounded px-2 py-1">
+                        Form
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-muted-foreground">
+                      Generate components, then copy or export them instantly.
+                      Fully typed and styled.
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="py-32 px-4">
+          <div className="container mx-auto max-w-5xl">
+            <div className="mb-20">
+              <h2 className="text-4xl md:text-5xl font-bold text-balance mb-4">
+                Everything you need
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl">
+                Built for designers and developers who care about quality and
+                efficiency
+              </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                {
-                  icon: Rocket,
-                  title: "Lightning Fast",
-                  desc: "Generate components in seconds",
-                },
-                {
-                  icon: Shield,
-                  title: "Production Ready",
-                  desc: "Clean, optimized code output",
-                },
-                {
-                  icon: Palette,
-                  title: "Customizable",
-                  desc: "Match your design system",
-                },
-                {
-                  icon: TrendingUp,
-                  title: "Always Learning",
-                  desc: "AI improves with every use",
-                },
-              ].map((item, index) => (
-                <Card
-                  key={index}
-                  className="text-center hover:shadow-lg transition-shadow"
-                >
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                      <item.icon className="w-6 h-6 text-primary" />
+            <div className="grid md:grid-cols-2 gap-12 mb-16">
+              {/* Featured card */}
+              <div className="md:col-span-1">
+                <Card className="h-full relative overflow-hidden border-2 border-foreground/20">
+                  <CardHeader>
+                    <div className="w-14 h-14 bg-foreground/10 rounded-xl flex items-center justify-center mb-6">
+                      <Sparkles className="w-7 h-7 text-foreground" />
                     </div>
-                    <h3 className="font-semibold mb-2">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    <CardTitle className="text-2xl">
+                      Instant Generation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-6 leading-relaxed">
+                      Write what you want. Watch AI transform your ideas into
+                      clean, production-ready code.
+                    </p>
+                    <div className="bg-muted rounded-lg p-4 text-xs font-mono text-foreground/60 border border-foreground/5">
+                      <span className="text-foreground">
+                        const component = ai.build
+                      </span>
+                      (your description)
+                    </div>
                   </CardContent>
                 </Card>
+              </div>
+
+              {/* Secondary features */}
+              <div className="space-y-6">
+                {[
+                  {
+                    icon: Zap,
+                    title: "Lightning Fast",
+                    desc: "Seconds, not hours. See results instantly.",
+                  },
+                  {
+                    icon: Shield,
+                    title: "Production Ready",
+                    desc: "Clean code you can trust and deploy.",
+                  },
+                  {
+                    icon: Palette,
+                    title: "Fully Customizable",
+                    desc: "Adapt designs to your exact needs.",
+                  },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-12 h-12 bg-foreground/10 rounded-lg flex items-center justify-center shrink-0">
+                      <item.icon className="w-6 h-6 text-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1 text-base">
+                        {item.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="philosophy" className="py-32 px-4 bg-muted/20">
+          <div className="container mx-auto max-w-4xl">
+            <div className="mb-20">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-foreground/10 text-foreground text-sm font-medium mb-6">
+                <Lightbulb className="w-4 h-4" />
+                Our Philosophy
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-balance mb-6">
+                Design at the speed of thought
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-3xl leading-relaxed">
+                We believe the best interfaces come from removing friction
+                between imagination and creation. By combining the precision of
+                code with the fluidity of natural language, we help you focus on
+                what matters: building things that work beautifully.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  title: "Clarity First",
+                  description:
+                    "Clean, understandable code. No bloat, no confusion. Every line serves a purpose.",
+                },
+                {
+                  title: "Intent Over Process",
+                  description:
+                    "Tell us what you want. Stop wrestling with tools. Let technology handle the how.",
+                },
+                {
+                  title: "Quality Always",
+                  description:
+                    "Production-ready code from day one. No shortcuts, no technical debt by default.",
+                },
+              ].map((item, index) => (
+                <div key={index} className="space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {item.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-sm">
+                    {item.description}
+                  </p>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* How It Works */}
-        <section id="how-it-works" className="py-20 px-4">
-          <div className="container mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-bold mb-4">
+        <section id="how-it-works" className="py-32 px-4 bg-background">
+          <div className="container mx-auto max-w-3xl">
+            <div className="text-center mb-20">
+              <h2 className="text-4xl md:text-5xl font-bold text-balance mb-6">
                 How it works
               </h2>
-              <p className="text-xl text-muted-foreground">
-                Three simple steps to amazing results
+              <p className="text-lg text-muted-foreground">
+                Three simple steps to beautiful results
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="space-y-8">
               {[
                 {
                   step: "01",
                   title: "Describe Your Idea",
                   description:
-                    "Tell our AI what you want to build in natural language",
+                    "Tell our AI what you want to build in natural language. Be as specific or creative as you'd like.",
                   icon: Sparkles,
                 },
                 {
                   step: "02",
                   title: "AI Generates Code",
                   description:
-                    "Watch as your idea transforms into beautiful, functional code",
+                    "Watch as your idea transforms into beautiful, functional, production-ready code in seconds.",
                   icon: Code,
                 },
                 {
                   step: "03",
-                  title: "Export & Deploy",
+                  title: "Use & Iterate",
                   description:
-                    "Download your code or deploy directly to production",
+                    "Download, deploy, or customize further. Iterate instantly with natural language feedback.",
                   icon: Download,
                 },
               ].map((item, index) => (
-                <div key={index} className="text-center relative">
-                  {index < 2 && (
-                    <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 opacity-30" />
-                  )}
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                    <item.icon className="w-8 h-8 text-white" />
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-background border-2 border-primary rounded-full flex items-center justify-center text-sm font-bold">
-                      {item.step}
+                <div key={index} className="flex gap-8 items-start">
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4 shrink-0">
+                      <item.icon className="w-6 h-6 text-foreground" />
                     </div>
+                    {index < 2 && <div className="w-0.5 h-24 bg-muted" />}
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                  <p className="text-muted-foreground">{item.description}</p>
+                  <div className="pt-1">
+                    <div className="text-sm font-semibold text-muted-foreground mb-1">
+                      Step {item.step}
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground">{item.description}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* example section */}
-        <section className="py-20 px-4 bg-muted/20">
-          <div className="container mx-auto">
-            <div
-              className={`mt-16 transition-all duration-1000 delay-300 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-10"
-              }`}
+        <section className="py-32 px-4">
+          <div className="container mx-auto max-w-2xl text-center">
+            <h2 className="text-4xl md:text-5xl font-bold text-balance mb-6">
+              Ready to build smarter?
+            </h2>
+            <p className="text-lg text-muted-foreground mb-10">
+              Join thousands of developers creating better interfaces with AI
+            </p>
+            <button
+              onClick={() => router.push("/chat")}
+              className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-foreground text-background font-medium text-base transition-all duration-300 hover:shadow-lg hover:shadow-foreground/20 active:scale-95"
             >
-              <div className="relative max-w-5xl mx-auto">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-2xl blur-3xl" />
-                <Card className="relative bg-card/50 backdrop-blur-sm border-2">
-                  <CardContent className="p-8">
-                    <div className="grid md:grid-cols-2 gap-8 items-center">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                          AI is generating...
-                        </div>
-                        <div className="bg-muted/50 rounded-lg p-4 text-left">
-                          <p className="text-sm font-mono">
-                            Create a modern pricing card with gradient
-                            background and hover effects
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                          <div
-                            className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                            style={{ animationDelay: "0.1s" }}
-                          />
-                          <div
-                            className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                            style={{ animationDelay: "0.2s" }}
-                          />
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-br from-blue-500/10 to-purple-600/10 rounded-lg p-6 border">
-                        <Card className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                          <CardHeader>
-                            <CardTitle>Pro Plan</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-3xl font-bold mb-2">
-                              $19/mo
-                            </div>
-                            <Button variant="secondary" className="w-full">
-                              Get Started
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+              <span>Start Building Free</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
           </div>
         </section>
       </div>

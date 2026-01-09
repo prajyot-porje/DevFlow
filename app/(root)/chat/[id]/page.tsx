@@ -340,7 +340,7 @@ export default function ChatWorkspacePage() {
             {/* Chat Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                <TabsList className="grid grid-cols-3 mx-6 mt-4 flex-shrink-0">
+                <TabsList className="grid grid-cols-3 mx-6 mt-4 shrink-0">
                   <TabsTrigger value="chat" className="gap-2">
                     <Sparkles className="w-4 h-4" />
                     Chat
@@ -377,7 +377,7 @@ export default function ChatWorkspacePage() {
                             >
                               {message.type === "assistant" && (
                                 <Avatar className="w-8 h-8 mt-1">
-                                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                  <div className="w-full h-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                     <Sparkles className="w-4 h-4 text-white" />
                                   </div>
                                 </Avatar>
@@ -419,7 +419,7 @@ export default function ChatWorkspacePage() {
                           {isLoading && (
                             <div className="flex gap-4 animate-in slide-in-from-bottom-2 duration-500">
                               <Avatar className="w-8 h-8 mt-1">
-                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <div className="w-full h-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                   <Sparkles className="w-4 h-4 text-white animate-spin" />
                                 </div>
                               </Avatar>
@@ -475,7 +475,7 @@ export default function ChatWorkspacePage() {
                                   OnGenerate(userInput)
                                 }
                               }}
-                              className="min-h-[60px] resize-none pr-12"
+                              className="min-h-15 resize-none pr-12"
                             />
                             <Button
                               size="sm"

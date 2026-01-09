@@ -9,7 +9,10 @@ export default clerkMiddleware(async (auth, req) => {
   }
   if (pathname === '/chat' && !userId) {
     const signInUrl = new URL('/sign-in', req.nextUrl.origin);
-    signInUrl.searchParams.set('returnBackUrl', '/');
+    // Preserve the requested path so Clerk redirects back to it after sign-in
+    // Set both Clerk's common params to be safe: `returnBackUrl` and `redirect_url`
+    signInUrl.searchParams.set('returnBackUrl', pathname);
+    signInUrl.searchParams.set('redirect_url', pathname);
     return NextResponse.redirect(signInUrl);
   }
 
