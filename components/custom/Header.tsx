@@ -3,7 +3,7 @@ import { SignedIn, UserButton } from "@clerk/nextjs"
 import { Avatar } from "@radix-ui/react-avatar"
 import { useEffect, useState } from "react"
 import { Button } from "../ui/button"
-import { Bell, Moon, Search, Sun, Zap } from "lucide-react"
+import { Bell, Moon, Search, Sun, Zap, Sparkles } from "lucide-react"
 import { Badge } from "../ui/badge"
 import { useTheme } from "next-themes"
 import {
@@ -51,27 +51,50 @@ const Header = ({ title }: { title: string }) => {
 
   return (
     <>
-      <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <h2 className="font-semibold">{title}</h2>
-          <Badge variant="secondary" className="animate-pulse">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-            Online
-          </Badge>
+      <header className="h-16 border-b bg-background/40 backdrop-blur-xl border-foreground/10 flex items-center justify-between px-6 md:px-8 shrink-0 shadow-sm">
+        <div className="flex items-center gap-4 min-w-0">
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-6 h-6 bg-linear-to-br from-slate-900 to-slate-700 dark:from-blue-400 dark:to-cyan-400 rounded-md flex items-center justify-center shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-white dark:text-slate-900" />
+            </div>
+            <span className="font-bold text-sm tracking-tight hidden sm:inline text-foreground">DevFlow</span>
+          </div>
+          {/* Title - with better spacing */}
+          <div className="hidden md:flex items-center gap-4 pl-4 border-l border-foreground/10 min-w-0">
+            <h2 className="font-semibold text-sm text-foreground truncate">{title}</h2>
+            <Badge variant="secondary" className="animate-pulse shrink-0">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5" />
+              Online
+            </Badge>
+          </div>
+          <div className="md:hidden">
+            <h2 className="font-semibold text-sm text-foreground truncate">{title}</h2>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Right Section */}
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            className="hidden sm:flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <Search className="w-4 h-4" />
-            <span className="hidden sm:inline text-sm">Search</span>
-            <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <span className="hidden lg:inline text-xs">Search</span>
+            <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
               <span className="text-xs">⌘</span>K
             </kbd>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSearchOpen(true)}
+            className="sm:hidden"
+          >
+            <Search className="w-4 h-4" />
           </Button>
 
           <DropdownMenu>
@@ -96,7 +119,7 @@ const Header = ({ title }: { title: string }) => {
                     onClick={() => router.push(`/chat/templates?template=${encodeURIComponent(template.name)}`)}
                     className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/50"
                   >
-                    <div className="flex-shrink-0 mt-0.5">
+                    <div className="shrink-0 mt-0.5">
                       <Zap className="w-4 h-4 text-blue-500" />
                     </div>
                     <div className="flex-1 space-y-1">
@@ -117,7 +140,14 @@ const Header = ({ title }: { title: string }) => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="ghost" size="sm" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+          <div className="w-px h-6 bg-foreground/10 hidden sm:block" />
+
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="text-muted-foreground hover:text-foreground"
+          >
             {mounted && theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
           <Avatar className="w-8 h-8">

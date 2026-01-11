@@ -18,8 +18,6 @@ export default function DevFlow() {
   const canStartConversation = useMutation(api.users.canStartConversation)
   const user = useUser()
   const [isLoading, setIsLoading] = useState(false)
-  // historyOpen and setHistoryOpen are kept for the Sidebar component,
-  // even if they don't directly control functionality on this page.
   const [historyOpen, setHistoryOpen] = useState(false)
   const [userInput, setuserInput] = useState("")
   const userDetails = GetUserDetails()
@@ -36,7 +34,6 @@ export default function DevFlow() {
       return
     }
     if (!userDetails || !userDetails._id) {
-      // Handle case where userDetails might not be loaded yet
       return
     }
     if (!input.trim()) return
@@ -64,8 +61,7 @@ export default function DevFlow() {
 
     const encodedMessage = encodeURIComponent(input)
     router.push(`/chat/${workspaceID}?message=${encodedMessage}`)
-    setuserInput("") // Clear the input field
-    // isLoading will be reset naturally as the component unmounts or the new page loads
+    setuserInput("") 
   }
 
   return (
@@ -73,40 +69,45 @@ export default function DevFlow() {
       <LimitDialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen} />
       <div className="w-screen h-screen overflow-hidden">
         <div className="flex w-full h-full bg-background text-foreground overflow-hidden">
-          {/* Sidebar - Kept as is */}
+          {/* Sidebar */}
           <Sidebar historyOpen={historyOpen} setHistoryOpen={setHistoryOpen} />
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col h-full overflow-hidden">
-            {/* Header - Kept as is */}
-            <Header title="DevFlow AI Code Studio" />
+            {/* Header */}
+            <Header title="AI Code Studio" />
             {/* Centralized Input Section */}
-            <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-hidden">
-              <div className="max-w-2xl w-full space-y-6">
+            <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-6 py-8 overflow-auto">
+              <div className="max-w-2xl w-full space-y-8">
                 {/* Welcome/Greeting */}
-                <div className="text-center space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tight">Start a new conversation</h1>
-                  <p className="text-muted-foreground">
-                    Describe what you want to build or choose a quick prompt below.
+                <div className="text-center space-y-3 mb-4">
+                  <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-balance">
+                    Turn ideas into code
+                  </h1>
+                  <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto">
+                    Describe what you want to build and let AI craft production-ready components in seconds.
                   </p>
                 </div>
 
                 {/* Quick Prompts */}
-                <div className="flex gap-2 flex-wrap justify-center">
-                  {quickPrompts.map((suggestion, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs hover:scale-105 transition-transform bg-transparent"
-                      onClick={() => setuserInput(suggestion)}
-                    >
-                      {suggestion}
-                    </Button>
-                  ))}
+                <div className="space-y-3">
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground px-2">Quick start</p>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    {quickPrompts.map((suggestion, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs hover:bg-muted/50 hover:scale-105 transition-all bg-card/50 border-foreground/10"
+                        onClick={() => setuserInput(suggestion)}
+                      >
+                        {suggestion}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Input Area */}
-                <div className="flex gap-2 w-full">
+                <div className="flex gap-3 w-full pt-4">
                   <div className="flex-1 relative">
                     <Textarea
                       placeholder="Describe what you want to build..."
@@ -118,20 +119,29 @@ export default function DevFlow() {
                           OnGenerate(userInput)
                         }
                       }}
-                      className="min-h-[60px] resize-none pr-12"
+                      className="min-h-20 resize-none pr-14 bg-card/50 border-foreground/10 focus:border-foreground/30 focus:bg-card"
                     />
                     <Button
                       size="sm"
-                      className="absolute right-2 bottom-2 h-8 w-8 p-0"
+                      className="absolute right-3 bottom-3 h-8 w-8 p-0 rounded-lg"
                       onClick={() => {
                         OnGenerate(userInput)
                       }}
                       disabled={!userInput.trim() || isLoading}
                     >
-                      {isLoading ? <Sparkles className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      {isLoading ? (
+                        <Sparkles className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
+
+                {/* Footer hint */}
+                <p className="text-xs text-muted-foreground text-center">
+                  Press <kbd className="px-2 py-0.5 rounded bg-muted/30 border border-foreground/10 text-foreground mx-1">Enter</kbd> to send or <kbd className="px-2 py-0.5 rounded bg-muted/30 border border-foreground/10 text-foreground mx-1">Shift + Enter</kbd> for new line
+                </p>
               </div>
             </div>
           </div>

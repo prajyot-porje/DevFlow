@@ -7,8 +7,7 @@ import {
   Plus,
   Settings,
   Sparkles,
-  Zap,
-  History,
+  Zap,  
 } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
@@ -30,7 +29,6 @@ const Sidebar: React.FC<SidebarProps> = ({ historyOpen, setHistoryOpen }) => {
   ].includes(pathname);
   const sidebarItems = [
     { icon: Zap, label: "Generate", route: "/chat", active: pathname === "/chat" || isChatDetail },
-    { icon: History, label: "History", route: null, active: false },
     { icon: Layers, label: "Projects", route: "/chat/projects", active: pathname === "/chat/projects" },
     { icon: Palette, label: "Templates", route: "/chat/templates", active: pathname === "/chat/templates" },
     { icon: Settings, label: "Settings", route: "/chat/settings", active: pathname === "/chat/settings" },
@@ -38,13 +36,13 @@ const Sidebar: React.FC<SidebarProps> = ({ historyOpen, setHistoryOpen }) => {
 
   return (
     <div
-      className={`${sidebarOpen ? "w-64" : "w-18"} transition-all duration-300 h-full ease-in-out border-r bg-card/50 backdrop-blur-sm flex-shrink-0`}
+      className={`${sidebarOpen ? "w-64" : "w-18"} transition-all duration-300 h-full ease-in-out border-r bg-card/50 backdrop-blur-sm shrink-0`}
     >
       <div className="p-4">
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
+          <div className="w-8 h-8 bg-linear-to-br from-slate-900 to-slate-700 dark:from-blue-400 dark:to-cyan-400 rounded-md flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-white dark:text-slate-900" />
+            </div>
           {sidebarOpen && (
             <div className="animate-in slide-in-from-left-2 duration-200">
               <h1 className="font-bold text-lg">DevFlow</h1>

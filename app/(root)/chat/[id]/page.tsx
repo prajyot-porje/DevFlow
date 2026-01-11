@@ -336,79 +336,79 @@ export default function ChatWorkspacePage() {
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Header */}
           <Header title={title} />
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden gap-0">
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                <TabsList className="grid grid-cols-3 mx-6 mt-4 shrink-0">
-                  <TabsTrigger value="chat" className="gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Chat
+                <TabsList className="grid grid-cols-3 md:grid-cols-3 mx-4 md:mx-6 mt-3 md:mt-4 shrink-0 gap-1 h-9">
+                  <TabsTrigger value="chat" className="gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3">
+                    <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Chat</span>
                   </TabsTrigger>
-                  <TabsTrigger value="code" className="gap-2">
-                    <Code className="w-4 h-4" />
-                    Code
-                    {generatingCode && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                  <TabsTrigger value="code" className="gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3">
+                    <Code className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Code</span>
+                    {generatingCode && <Loader2 className="w-3 h-3 animate-spin ml-0 md:ml-1" />}
                   </TabsTrigger>
-                  <TabsTrigger value="preview" className="gap-2">
-                    <Eye className="w-4 h-4" />
-                    Preview
-                    {generatingCode && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                  <TabsTrigger value="preview" className="gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-3">
+                    <Eye className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Preview</span>
+                    {generatingCode && <Loader2 className="w-3 h-3 animate-spin ml-0 md:ml-1" />}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent
                   value="chat"
-                  className="flex-1 flex flex-col m-6 mt-4 overflow-auto min-h-0 hide-scrollbar"
+                  className="flex-1 flex flex-col mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar"
                 >
                   {loadingHistory ? (
                     <ChatTabSkeleton />
                   ) : (
                     <>
                       {/* Chat Area */}
-                      <ScrollArea className="flex-1 pr-4 hide-scrollbar">
-                        <div className="space-y-6">
+                      <ScrollArea className="flex-1 pr-2 md:pr-4 hide-scrollbar">
+                        <div className="space-y-4 md:space-y-6">
                           {message.map((message) => (
                             <div
                               key={message.id}
-                              className={`flex gap-4 animate-in slide-in-from-bottom-2 duration-500 ${
+                              className={`flex gap-3 md:gap-4 animate-in slide-in-from-bottom-2 duration-500 ${
                                 message.type === "user" ? "justify-end" : ""
                               }`}
                             >
                               {message.type === "assistant" && (
-                                <Avatar className="w-8 h-8 mt-1">
+                                <Avatar className="w-7 h-7 md:w-8 md:h-8 mt-1 shrink-0">
                                   <div className="w-full h-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                    <Sparkles className="w-4 h-4 text-white" />
+                                    <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
                                   </div>
                                 </Avatar>
                               )}
 
-                              <div className={`max-w-[80%] ${message.type === "user" ? "order-first" : ""}`}>
+                              <div className={`max-w-[85%] sm:max-w-[80%] md:max-w-[70%] ${message.type === "user" ? "order-first" : ""}`}>
                                 <Card
                                   className={`${
                                     message.type === "user" ? "bg-primary text-primary-foreground ml-auto" : "bg-card"
                                   }`}
                                 >
-                                  <CardContent className="">
-                                    <div className="text-sm leading-relaxed">
+                                  <CardContent className="p-3 md:p-4">
+                                    <div className="text-xs md:text-sm leading-relaxed">
                                       <ReactMarkdown>{message.content}</ReactMarkdown>
                                     </div>
                                   </CardContent>
                                 </Card>
-                                <p className="text-xs text-muted-foreground mt-2 px-1">
+                                <p className="text-[10px] md:text-xs text-muted-foreground mt-1.5 md:mt-2 px-1">
                                   <TimeClient date={message.timestamp} />
                                 </p>
                               </div>
 
                               {message.type === "user" && (
-                                <Avatar className="w-8 h-8 mt-1">
+                                <Avatar className="w-7 h-7 md:w-8 md:h-8 mt-1 shrink-0">
                                   <SignedIn>
                                     <Image
                                       src={user.user?.imageUrl || "/placeholder.svg"}
                                       alt={user.user?.firstName || "User"}
                                       width={32}
                                       height={32}
-                                      className="rounded-full object-cover w-8 h-8"
+                                      className="rounded-full object-cover w-7 h-7 md:w-8 md:h-8"
                                     />
                                   </SignedIn>
                                 </Avatar>
@@ -417,14 +417,14 @@ export default function ChatWorkspacePage() {
                           ))}
 
                           {isLoading && (
-                            <div className="flex gap-4 animate-in slide-in-from-bottom-2 duration-500">
-                              <Avatar className="w-8 h-8 mt-1">
+                            <div className="flex gap-3 md:gap-4 animate-in slide-in-from-bottom-2 duration-500">
+                              <Avatar className="w-7 h-7 md:w-8 md:h-8 mt-1 shrink-0">
                                 <div className="w-full h-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                  <Sparkles className="w-4 h-4 text-white animate-spin" />
+                                  <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-white animate-spin" />
                                 </div>
                               </Avatar>
                               <Card className="bg-card">
-                                <CardContent className="p-4">
+                                <CardContent className="p-3 md:p-4">
                                   <div className="flex items-center gap-2">
                                     <div className="flex gap-1">
                                       <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
@@ -437,7 +437,7 @@ export default function ChatWorkspacePage() {
                                         style={{ animationDelay: "0.2s" }}
                                       />
                                     </div>
-                                    <span className="text-sm text-muted-foreground">Generating...</span>
+                                    <span className="text-xs md:text-sm text-muted-foreground">Generating...</span>
                                   </div>
                                 </CardContent>
                               </Card>
@@ -448,14 +448,14 @@ export default function ChatWorkspacePage() {
                       </ScrollArea>
 
                       {/* Input Area */}
-                      <div className="mt-4 space-y-4">
-                        <div className="flex gap-2 flex-wrap">
-                          {quickPrompts.map((suggestion, index) => (
+                      <div className="mt-3 md:mt-4 space-y-3 md:space-y-4 pt-2">
+                        <div className="flex gap-1.5 md:gap-2 flex-wrap">
+                          {quickPrompts.slice(0, 3).map((suggestion, index) => (
                             <Button
                               key={index}
                               variant="outline"
                               size="sm"
-                              className="text-xs hover:scale-105 transition-transform bg-transparent"
+                              className="text-[10px] md:text-xs hover:bg-muted/50 hover:scale-105 transition-all bg-card/50 border-foreground/10 h-7 md:h-8 px-2 md:px-3"
                               onClick={() => setuserInput(suggestion)}
                             >
                               {suggestion}
@@ -475,17 +475,17 @@ export default function ChatWorkspacePage() {
                                   OnGenerate(userInput)
                                 }
                               }}
-                              className="min-h-15 resize-none pr-12"
+                              className="min-h-12 md:min-h-14 resize-none pr-10 md:pr-12 text-xs md:text-sm bg-card/50 border-foreground/10"
                             />
                             <Button
                               size="sm"
-                              className="absolute right-2 bottom-2 h-8 w-8 p-0"
+                              className="absolute right-2 bottom-2 h-7 w-7 md:h-8 md:w-8 p-0 rounded-lg"
                               onClick={() => {
                                 OnGenerate(userInput)
                               }}
                               disabled={!userInput.trim() || isLoading}
                             >
-                              <Send className="w-4 h-4" />
+                              <Send className="w-3.5 h-3.5 md:w-4 md:h-4" />
                             </Button>
                           </div>
                         </div>
@@ -495,7 +495,7 @@ export default function ChatWorkspacePage() {
                 </TabsContent>
 
                 {/* Code Tab */}
-                <TabsContent value="code" className="flex-1 flex m-6 mt-4 overflow-auto min-h-0 hide-scrollbar">
+                <TabsContent value="code" className="flex-1 flex mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar">
                   {generatingCode ? (
                     <CodeTabSkeleton />
                   ) : (
@@ -510,10 +510,10 @@ export default function ChatWorkspacePage() {
                   )}
                 </TabsContent>
 
-                {/* Preview Tab */}
+                {/* Preview Tab - Hidden on mobile/tablet, visible on desktop */}
                 <TabsContent
                   value="preview"
-                  className="flex-1 flex flex-col m-6 mt-4 overflow-auto min-h-0 hide-scrollbar"
+                  className="flex-1 flex flex-col mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar"
                 >
                   {generatingCode ? (
                     <PreviewTabSkeleton />
@@ -528,8 +528,10 @@ export default function ChatWorkspacePage() {
               </Tabs>
             </div>
 
-            {/* History Sidebar */}
-            <History historyOpen={historyOpen} setHistoryOpen={setHistoryOpen} />
+            {/* History Sidebar - Hidden on mobile */}
+            <div className="hidden lg:block">
+              <History historyOpen={historyOpen} setHistoryOpen={setHistoryOpen} />
+            </div>
           </div>
         </div>
       </div>
