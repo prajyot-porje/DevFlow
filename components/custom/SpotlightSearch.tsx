@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Input } from "../ui/input"
 import { Search, FileText, Folder, Clock, Star, ArrowRight } from "lucide-react"
 import { ProjectTemplates } from "@/data/projectTemplates"
@@ -72,7 +72,17 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
     }
   }, [query, workspaces])
 
-  const allResults = [...searchResults.templates, ...searchResults.projects]
+  const allResults = useMemo(() => [...searchResults.templates, ...searchResults.projects], [searchResults]);
+  
+  const handleSelect = useCallback((item: (typeof allResults)[0]) => {
+    if (item.type === "template") {
+      router.push(`/chat/templates?template=${encodeURIComponent(item.title)}`)
+    } else {
+      router.push(`/chat/${item.id}?highlight=true`)
+    }
+    onClose()
+  }, [router, onClose])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return
@@ -101,8 +111,7 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, selectedIndex])
+  }, [isOpen, selectedIndex, allResults, onClose, handleSelect])
   useEffect(() => {
     setSelectedIndex(0)
   }, [query])
@@ -114,25 +123,16 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
     }
   }, [isOpen])
 
-  const handleSelect = (item: (typeof allResults)[0]) => {
-    if (item.type === "template") {
-      router.push(`/chat/templates?template=${encodeURIComponent(item.title)}`)
-    } else {
-      router.push(`/chat/${item.id}?highlight=true`)
-    }
-    onClose()
-  }
-
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20"
       case "Intermediate":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/20"
       case "Advanced":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/20"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border-default)]"
     }
   }
 
@@ -151,30 +151,30 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl p-0 gap-0">
+      <DialogContent className="max-w-2xl p-0 gap-0 bg-[var(--color-bg-surface)] border-[var(--color-border-default)]">
         <DialogTitle asChild>
         <VisuallyHidden>Spotlight Search</VisuallyHidden>
       </DialogTitle>
-        <div className="flex items-center border-b px-4 py-3">
-          <Search className="w-4 h-4 text-muted-foreground mr-3" />
+        <div className="flex items-center border-b border-[var(--color-border-subtle)] px-4 py-3">
+          <Search className="w-4 h-4 text-[var(--color-text-tertiary)] mr-3" />
           <Input
             placeholder="Search templates and projects..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="border-0 focus-visible:ring-0 text-base"
+            className="border-0 focus-visible:ring-0 text-base bg-transparent text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
             autoFocus
           />
         </div>
 
         <div className="max-h-96 overflow-y-auto">
           {query.trim() === "" ? (
-            <div className="p-8 text-center text-muted-foreground">
+            <div className="p-8 text-center text-[var(--color-text-secondary)]">
               <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium mb-2">Search everything</p>
               <p className="text-sm">Find templates, projects, and more...</p>
             </div>
           ) : allResults.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
+            <div className="p-8 text-center text-[var(--color-text-secondary)]">
               <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium mb-2">No results found</p>
               <p className="text-sm">Try adjusting your search terms</p>
@@ -183,19 +183,19 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
             <div className="py-2">
               {searchResults.templates.length > 0 && (
                 <div className="mb-4">
-                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div className="px-4 py-2 text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider">
                     Templates
                   </div>
                   {searchResults.templates.map((template, index) => (
                     <div
                       key={template.id}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                        selectedIndex === index ? "bg-muted" : "hover:bg-muted/50"
+                        selectedIndex === index ? "bg-[var(--color-bg-elevated)]" : "hover:bg-[var(--color-bg-hover)]"
                       }`}
                       onClick={() => handleSelect(template)}
                     >
                       <div className="flex-shrink-0">
-                        <FileText className="w-5 h-5 text-blue-500" />
+                        <FileText className="w-5 h-5 text-[var(--color-accent)]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -203,12 +203,12 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
                           <Badge className={`text-xs ${getDifficultyColor(template.difficulty)}`}>
                             {template.difficulty}
                           </Badge>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)]">
                             <Star className="w-3 h-3 fill-current text-yellow-400" />
                             {template.popularity}
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{template.description}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1">{template.description}</p>
                         <div className="flex gap-1 mt-1">
                           {template.tags.slice(0, 3).map((tag) => (
                             <Badge key={tag} variant="secondary" className="text-xs px-1 py-0">
@@ -217,7 +217,7 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
                           ))}
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                      <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                     </div>
                   ))}
                 </div>
@@ -225,31 +225,31 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
 
               {searchResults.projects.length > 0 && (
                 <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div className="px-4 py-2 text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider">
                     Projects
                   </div>
                   {searchResults.projects.map((project, index) => (
                     <div
                       key={project.id}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                        selectedIndex === searchResults.templates.length + index ? "bg-muted" : "hover:bg-muted/50"
+                        selectedIndex === searchResults.templates.length + index ? "bg-[var(--color-bg-elevated)]" : "hover:bg-[var(--color-bg-hover)]"
                       }`}
                       onClick={() => handleSelect(project)}
                     >
                       <div className="flex-shrink-0">
-                        <Folder className="w-5 h-5 text-green-500" />
+                        <Folder className="w-5 h-5 text-[var(--color-success)]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-medium text-sm truncate">{project.title}</p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)]">
                             <Clock className="w-3 h-3" />
                             {formatTimeAgo(project.createdAt)}
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{project.description}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1">{project.description}</p>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                      <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                     </div>
                   ))}
                 </div>
@@ -259,7 +259,7 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
         </div>
 
         {allResults.length > 0 && (
-          <div className="border-t px-4 py-2 text-xs text-muted-foreground">
+          <div className="border-t border-[var(--color-border-subtle)] px-4 py-2 text-xs text-[var(--color-text-tertiary)]">
             Use ↑↓ to navigate, Enter to select, Esc to close
           </div>
         )}

@@ -7,7 +7,8 @@ import { api } from "../../convex/_generated/api"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import {
-  FileText
+  FileText,
+  X,
 } from "lucide-react"
 import { iconColors, projectIcons } from "@/data/data"
 
@@ -48,7 +49,7 @@ const formatTimeAgo = (timestamp: number) => {
 const History: React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) => {
   const router = useRouter()
   const { user } = useUser()
-  const convexUser = useQuery(api.users.getUserByUid, user?.id ? { uid: user.id } : "skip")
+  const convexUser = useQuery(api.users.GetUser, user?.id ? { uid: user.id } : "skip")
   const workspaces = useQuery(
     api.workspace.getRecentWorkspacesByUser,
     convexUser?._id ? { userId: convexUser._id } : "skip",
@@ -60,31 +61,31 @@ const History: React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) => {
   return (
     <div>
       {historyOpen && (
-        <div className="w-80 border-l bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 animate-in slide-in-from-right-2 duration-300 h-full overflow-y-auto flex-shrink-0">
+        <div className="w-80 border-l border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] animate-in slide-in-from-right-2 duration-300 h-full overflow-y-auto flex-shrink-0">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="font-semibold text-lg">Recent Projects</h3>
-                <p className="text-sm text-muted-foreground">{workspaces?.length || 0} projects</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">{workspaces?.length || 0} projects</p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setHistoryOpen(false)}
-                className="h-8 w-8 p-0 hover:bg-muted"
+                className="h-8 w-8 p-0 hover:bg-[var(--color-bg-hover)] rounded-md flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
               >
-                ×
+                <X className="w-4 h-4" />
               </Button>
             </div>
 
             <div className="space-y-3">
               {workspaces?.length === 0 && (
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-muted-foreground" />
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--color-bg-elevated)] flex items-center justify-center">
+                    <FileText className="w-8 h-8 text-[var(--color-text-tertiary)]" />
                   </div>
-                  <p className="text-sm text-muted-foreground">No projects yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-sm text-[var(--color-text-secondary)]">No projects yet</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
                     Start a new conversation to create your first project
                   </p>
                 </div>
@@ -98,7 +99,7 @@ const History: React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) => {
                   <Card
                     key={project._id}
                     onClick={() => handleCardClick(project._id)}
-                    className="cursor-pointer hover:shadow-md hover:border-primary/20 transition-all duration-200 group"
+                    className="cursor-pointer hover:shadow-md hover:border-[var(--color-border-default)] border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] transition-all duration-200 group"
                   >
                     <CardContent className="p-4">
                       <div className="flex gap-3">
@@ -108,14 +109,14 @@ const History: React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) => {
                           <IconComponent className="w-6 h-6" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate mb-1 group-hover:text-primary transition-colors">
+                          <h4 className="font-medium text-sm truncate mb-1 text-[var(--color-text-primary)] group-hover:text-[var(--color-accent-light)] transition-colors">
                             {project.info?.title || "Untitled Project"}
                           </h4>
-                          <p className="text-xs text-muted-foreground truncate mb-2 leading-relaxed">
+                          <p className="text-xs text-[var(--color-text-secondary)] truncate mb-2 leading-relaxed">
                             {project.info?.description || "No description available"}
                           </p>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground font-medium">
+                            <span className="text-xs text-[var(--color-text-tertiary)] font-medium">
                               {formatTimeAgo(project._creationTime)}
                             </span>
                             <div className="w-2 h-2 rounded-full bg-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>

@@ -7,7 +7,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (pathname === '/sign-in' || pathname === '/sign-up' || pathname ==='/') {
     return NextResponse.next();
   }
-  if (pathname === '/chat' && !userId) {
+  if (pathname.startsWith('/chat') && !userId) {
     const signInUrl = new URL('/sign-in', req.nextUrl.origin);
     // Preserve the requested path so Clerk redirects back to it after sign-in
     // Set both Clerk's common params to be safe: `returnBackUrl` and `redirect_url`

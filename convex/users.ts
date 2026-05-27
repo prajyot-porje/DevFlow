@@ -7,11 +7,13 @@ export const CreateUser = mutation({
         email: v.string(),
         image: v.string(),
         uid: v.string(),
-
     },
     handler: async (ctx, args) => {
-        const user = await ctx.db.query("users").filter(q => q.eq(q.field("uid"), args.uid)).collect();
-        if (user.length === 0) { 
+        const user = await ctx.db
+            .query("users")
+            .withIndex("uid", (q) => q.eq("uid", args.uid))
+            .first();
+        if (!user) { 
             const today = new Date().toISOString().slice(0, 10); 
             const result = await ctx.db.insert("users", {
                 name: args.name,
@@ -31,24 +33,14 @@ export const GetUser = query({
         uid: v.string(),
     },
     handler: async (ctx, args) => {
-        const user = await ctx.db.query("users").filter(q => q.eq(q.field("uid"), args.uid)).collect();
-        if (user.length > 0) {
-            return user[0];
-        } else {
-            return '';
-        }
+        const user = await ctx.db
+            .query("users")
+            .withIndex("uid", (q) => q.eq("uid", args.uid))
+            .first();
+        return user || null;
     }
 });
 
-export const getUserByUid = query({
-  args: { uid: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("uid", (q) => q.eq("uid", args.uid))
-      .first();
-  },
-});
 
 export const canStartConversation = mutation({
   args: { userId: v.id("users") },

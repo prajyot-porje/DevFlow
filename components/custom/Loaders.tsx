@@ -9,7 +9,7 @@ export function CodeTabSkeleton() {
   return (
     <div className="flex h-[79vh] w-full animate-in fade-in-0 duration-500">
       {/* File Explorer Skeleton */}
-      <div className="w-[12vw] border-r bg-card p-4 space-y-3">
+      <div className="w-[12vw] border-r border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-4 space-y-3">
         <div className="flex items-center gap-2 mb-4">
           <Skeleton className="h-4 w-4" />
           <Skeleton className="h-4 w-20" />
@@ -20,19 +20,19 @@ export function CodeTabSkeleton() {
             className="flex items-center gap-2 animate-pulse"
             style={{ animationDelay: `${i * 100}ms` }}
           >
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="h-4 w-4 text-[var(--color-text-tertiary)]" />
             <Skeleton className="h-4 flex-1" />
           </div>
         ))}
       </div>
 
       {/* Code Editor Skeleton */}
-      <div className="flex-1 bg-card p-4 space-y-3">
+      <div className="flex-1 bg-[var(--color-bg-surface)] p-4 space-y-3">
         <div className="flex items-center justify-between mb-4">
           <Skeleton className="h-6 w-32" />
           <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-[var(--color-accent)]" />
+            <span className="text-sm text-[var(--color-text-secondary)]">
               Generating code...
             </span>
           </div>
@@ -56,17 +56,17 @@ export function CodeTabSkeleton() {
 
         <div className="flex items-center gap-2 mt-6">
           <div className="flex gap-1">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+            <div className="w-2 h-2 bg-[var(--color-accent)] rounded-full animate-bounce" />
             <div
-              className="w-2 h-2 bg-primary rounded-full animate-bounce"
+              className="w-2 h-2 bg-[var(--color-accent)] rounded-full animate-bounce"
               style={{ animationDelay: "0.1s" }}
             />
             <div
-              className="w-2 h-2 bg-primary rounded-full animate-bounce"
+              className="w-2 h-2 bg-[var(--color-accent)] rounded-full animate-bounce"
               style={{ animationDelay: "0.2s" }}
             />
           </div>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-[var(--color-text-secondary)]">
             Writing your code...
           </span>
         </div>
@@ -77,8 +77,8 @@ export function CodeTabSkeleton() {
 
 export function PreviewTabSkeleton() {
   return (
-    <div className="h-[79vh] bg-card border rounded-lg overflow-hidden animate-in fade-in-0 duration-500">
-      <div className="h-12 bg-muted border-b flex items-center gap-2 px-4">
+    <div className="h-[79vh] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-lg overflow-hidden animate-in fade-in-0 duration-500">
+      <div className="h-12 bg-[var(--color-bg-elevated)] border-b border-[var(--color-border-subtle)] flex items-center gap-2 px-4">
         <div className="flex gap-2">
           <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse" />
           <div
@@ -94,8 +94,8 @@ export function PreviewTabSkeleton() {
           <Skeleton className="h-6 w-48" />
         </div>
         <div className="flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <span className="text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-[var(--color-accent)]" />
+          <span className="text-sm text-[var(--color-text-secondary)]">
             Building preview...
           </span>
         </div>
@@ -139,19 +139,19 @@ export function PreviewTabSkeleton() {
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-center gap-3 mt-8 p-6 bg-muted/50 rounded-lg">
+        <div className="flex items-center justify-center gap-3 mt-8 p-6 bg-[var(--color-bg-elevated)] rounded-lg">
           <div className="flex gap-1">
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce" />
+            <div className="w-3 h-3 bg-[var(--color-accent)] rounded-full animate-bounce" />
             <div
-              className="w-3 h-3 bg-primary rounded-full animate-bounce"
+              className="w-3 h-3 bg-[var(--color-accent)] rounded-full animate-bounce"
               style={{ animationDelay: "0.1s" }}
             />
             <div
-              className="w-3 h-3 bg-primary rounded-full animate-bounce"
+              className="w-3 h-3 bg-[var(--color-accent)] rounded-full animate-bounce"
               style={{ animationDelay: "0.2s" }}
             />
           </div>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-[var(--color-text-secondary)]">
             Compiling your application...
           </span>
         </div>
@@ -165,12 +165,12 @@ export function ChatMessageSkeleton() {
     <div className="space-y-6">
       <div className="flex gap-4 animate-pulse">
         <Avatar className="w-8 h-8 mt-1">
-          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
         </Avatar>
         <div className="w-3xl">
-          <Card className="bg-card">
+          <Card className="bg-[var(--color-bg-surface)] border-[var(--color-border-subtle)]">
             <CardContent className="p-4">
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
@@ -184,9 +184,9 @@ export function ChatMessageSkeleton() {
       </div>
       <div className="flex gap-4 w-full justify-end animate-pulse">
         <div className="w-3xl order-first">
-          <Card className="bg-primary text-primary-foreground ml-auto">
+          <Card className="bg-[var(--color-bg-chat-user)] border-[var(--color-accent-glow)] text-[var(--color-text-primary)] ml-auto">
             <CardContent className="p-4">
-              <Skeleton className="h-4 w-3/4 bg-primary-foreground/20" />
+              <Skeleton className="h-4 w-3/4 bg-[var(--color-bg-elevated)]" />
             </CardContent>
           </Card>
           <Skeleton className="h-3 w-16 mt-2 ml-auto" />
@@ -196,12 +196,12 @@ export function ChatMessageSkeleton() {
     
       <div className="flex gap-4  animate-pulse">
         <Avatar className="w-8 h-8 mt-1">
-          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
         </Avatar>
         <div className="w-3xl">
-          <Card className="bg-card">
+          <Card className="bg-[var(--color-bg-surface)] border-[var(--color-border-subtle)]">
             <CardContent className="p-4">
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
@@ -285,7 +285,7 @@ export function ProjectsGridSkeleton() {
 
 export function ProjectsHeaderSkeleton() {
   return (
-    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+    <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] sticky top-0 z-10">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -320,11 +320,105 @@ export function ProjectsHeaderSkeleton() {
 
 export function ProjectsPageSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[var(--color-bg-page)]">
       <ProjectsHeaderSkeleton />
       <div className="container mx-auto px-6 py-8">
         <ProjectsGridSkeleton />
       </div>
     </div>
   )
+}
+
+export function TemplatesPageSkeleton() {
+  return (
+    <div className="h-screen w-full flex bg-[var(--color-bg-page)] text-[var(--color-text-primary)]">
+      {/* Sidebar Placeholder */}
+      <div className="w-[60px] md:w-[240px] border-r border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shrink-0 hidden sm:block" />
+      <div className="flex-1 p-8 overflow-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8 space-y-2">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-6 w-96" />
+          </div>
+
+          <div className="flex gap-3 mb-8">
+            <Skeleton className="h-10 w-32 rounded-full" />
+            <Skeleton className="h-10 w-24 rounded-full" />
+            <Skeleton className="h-10 w-32 rounded-full" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="bg-[var(--color-bg-surface)] border-[var(--color-border-default)] overflow-hidden">
+                <Skeleton className="h-32 w-full rounded-none" />
+                <CardContent className="p-6 space-y-4">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                  <div className="flex gap-2 pt-4">
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                  <div className="flex gap-2 pt-2 mt-4">
+                    <Skeleton className="h-9 flex-1 rounded-md" />
+                    <Skeleton className="h-9 w-9 rounded-md" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SettingsPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-[var(--color-bg-page)]">
+      {/* Header Placeholder */}
+      <div className="h-16 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] sticky top-0 z-10" />
+      
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
+          {/* Sidebar */}
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+
+          {/* Main Content */}
+          <div className="space-y-6">
+            <Card className="bg-[var(--color-bg-surface)] border-[var(--color-border-default)]">
+              <CardContent className="p-6 space-y-6">
+                <Skeleton className="h-8 w-48" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full max-w-md" />
+                  <Skeleton className="h-10 w-full max-w-sm rounded-md" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full max-w-md" />
+                  <Skeleton className="h-10 w-full max-w-sm rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[var(--color-bg-surface)] border-[var(--color-border-default)]">
+              <CardContent className="p-6 space-y-6">
+                <Skeleton className="h-8 w-48" />
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-16 w-16 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

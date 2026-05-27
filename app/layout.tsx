@@ -1,18 +1,32 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Onest, Figtree, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import ClientProviders from "./ClientProviders";
 import { ThemeProvider } from "next-themes";
+import NextTopLoader from 'nextjs-toploader';
+import { Toaster } from "sonner";
+import { Agentation } from "agentation";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const onest = Onest({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const figtree = Figtree({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,14 +40,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ClerkProvider>
-            <ClientProviders>{children}</ClientProviders>
-          </ClerkProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+    <>
+
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${onest.variable} ${figtree.variable} ${jetbrainsMono.variable}`}>
+          <NextTopLoader
+            color="var(--color-accent)"
+            initialPosition={0.08}
+            crawlSpeed={200}
+            height={3}
+            crawl={true}
+            showSpinner={false}
+            easing="ease"
+            speed={200}
+            shadow="0 0 10px var(--color-accent),0 0 5px var(--color-accent)"
+          />
+          <ThemeProvider attribute="data-theme" defaultTheme="dark">
+            <ClerkProvider>
+              <ClientProviders>
+                {children}
+                <Toaster position="top-right" richColors />
+              </ClientProviders>
+            </ClerkProvider>
+          </ThemeProvider>
+        </body>
+      </html>
+      {process.env.NODE_ENV === "development" && <Agentation />}
+    </>
   );
 }
+

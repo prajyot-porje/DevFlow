@@ -1,10 +1,7 @@
 "use client"
 import { SignedIn, UserButton } from "@clerk/nextjs"
-import { Avatar } from "@radix-ui/react-avatar"
 import { useEffect, useState } from "react"
-import { Button } from "../ui/button"
-import { Bell, Moon, Search, Sun, Zap, Sparkles } from "lucide-react"
-import { Badge } from "../ui/badge"
+import { Bell, Moon, Search, Sun, Zap, Sparkles, Menu, Clock } from "lucide-react"
 import { useTheme } from "next-themes"
 import {
   DropdownMenu,
@@ -13,16 +10,24 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { ProjectTemplates } from "@/data/projectTemplates"
 import SpotlightSearch from "./SpotlightSearch"
 
-const Header = ({ title }: { title: string }) => {
+const Header = ({ showHistoryButton = false, onToggleHistory }: { showHistoryButton?: boolean, onToggleHistory?: () => void }) => {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [randomTemplates, setRandomTemplates] = useState<{ name: string; description: string }[]>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
+
+  let title = "Dashboard"
+  if (pathname === "/chat") title = "Generate"
+  else if (pathname.startsWith("/chat/projects")) title = "Projects"
+  else if (pathname.startsWith("/chat/templates")) title = "Templates"
+  else if (pathname.startsWith("/chat/settings")) title = "Settings"
+  else if (pathname.startsWith("/chat/")) title = "Chat"
 
   useEffect(() => {
     setMounted(true)
@@ -51,65 +56,91 @@ const Header = ({ title }: { title: string }) => {
 
   return (
     <>
-      <header className="h-16 border-b bg-background/40 backdrop-blur-xl border-foreground/10 flex items-center justify-between px-6 md:px-8 shrink-0 shadow-sm">
-        <div className="flex items-center gap-4 min-w-0">
-          {/* Logo */}
+      <header className="sticky top-0 z-50 h-[52px] border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-page)] flex items-center justify-between px-6 gap-3 shrink-0">
+        <span className="sr-only">{title}</span>
+        {/* Left Group */}
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Hamburger Menu (Mobile Only) */}
+          <button
+            onClick={() => window.dispatchEvent(new Event("toggle-sidebar"))}
+            className="md:hidden w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] transition-colors duration-fast ease-soft cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            title="Toggle Sidebar"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+
+          {/* DevFlow Icon & Brand name */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-6 h-6 bg-linear-to-br from-slate-900 to-slate-700 dark:from-blue-400 dark:to-cyan-400 rounded-md flex items-center justify-center shrink-0">
-              <Sparkles className="w-3.5 h-3.5 text-white dark:text-slate-900" />
+            <div className="w-5 h-5 bg-linear-to-br from-navy-950 to-navy-700 dark:from-accent-400 dark:to-accent-500 rounded-md flex items-center justify-center shrink-0">
+              <Sparkles className="w-3 h-3 text-white dark:text-navy-950" />
             </div>
-            <span className="font-bold text-sm tracking-tight hidden sm:inline text-foreground">DevFlow</span>
+            <span className="font-heading font-semibold text-sm tracking-tight text-[var(--color-text-primary)]">
+              DevFlow
+            </span>
+            <span className="text-[var(--color-text-tertiary)] hidden sm:inline">/</span>
+            <span className="font-body text-sm font-medium text-[var(--color-text-secondary)] hidden sm:inline truncate max-w-[200px]">
+              {title}
+            </span>
           </div>
-          {/* Title - with better spacing */}
-          <div className="hidden md:flex items-center gap-4 pl-4 border-l border-foreground/10 min-w-0">
-            <h2 className="font-semibold text-sm text-foreground truncate">{title}</h2>
-            <Badge variant="secondary" className="animate-pulse shrink-0">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5" />
-              Online
-            </Badge>
-          </div>
-          <div className="md:hidden">
-            <h2 className="font-semibold text-sm text-foreground truncate">{title}</h2>
-          </div>
+
         </div>
 
-        {/* Right Section */}
+        {/* Right Group */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
+          {/* Search Button (Desktop) */}
+          <button
             onClick={() => setIsSearchOpen(true)}
-            className="hidden sm:flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] font-body text-xs text-[var(--color-text-tertiary)] hover:border-[var(--color-border-strong)] transition-colors duration-fast ease-soft cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+          >
+            <Search className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+            <span>Search <span className="hidden md:inline">{typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl+K'}</span></span>
+          </button>
+
+          {/* Search Button (Mobile) */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] transition-colors duration-fast ease-soft cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            title="Search"
           >
             <Search className="w-4 h-4" />
-            <span className="hidden lg:inline text-xs">Search</span>
-            <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </Button>
+          </button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsSearchOpen(true)}
-            className="sm:hidden"
+          {/* History Button (if enabled) */}
+          {showHistoryButton && onToggleHistory && (
+            <button
+              onClick={onToggleHistory}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] transition-colors duration-fast ease-soft cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              title="Toggle Recent Projects"
+            >
+              <Clock className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] transition-colors duration-fast ease-soft cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            title="Toggle Theme"
           >
-            <Search className="w-4 h-4" />
-          </Button>
+            {mounted ? (
+              theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />
+            ) : (
+              <div className="w-4 h-4" />
+            )}
+          </button>
 
+          {/* Notification Bell Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
-                  {randomTemplates.length}
-                </span>
-              </Button>
+              <button className="w-9 h-9 rounded-full bg-transparent hover:bg-[var(--color-bg-elevated)] flex items-center justify-center relative text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-fast ease-soft cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
+                <Bell className="w-[18px] h-[18px]" />
+
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <div className="px-4 py-3 border-b">
-                <h4 className="font-semibold text-sm">Recommended Templates</h4>
-                <p className="text-xs text-muted-foreground">Discover new templates to boost your productivity</p>
+            <DropdownMenuContent align="end" className="w-80 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[12px] shadow-lg p-1">
+              <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                <h4 className="font-heading font-semibold text-sm text-[var(--color-text-primary)]">Recommended Templates</h4>
+                <p className="font-body text-xs text-[var(--color-text-secondary)]">Discover new templates to boost your productivity</p>
               </div>
 
               <div className="max-h-80 overflow-y-auto">
@@ -117,22 +148,22 @@ const Header = ({ title }: { title: string }) => {
                   <DropdownMenuItem
                     key={template.name}
                     onClick={() => router.push(`/chat/templates?template=${encodeURIComponent(template.name)}`)}
-                    className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/50"
+                    className="flex items-start gap-3 p-4 cursor-pointer hover:bg-[var(--color-bg-hover)] rounded-md transition-colors"
                   >
                     <div className="shrink-0 mt-0.5">
-                      <Zap className="w-4 h-4 text-blue-500" />
+                      <Zap className="w-4 h-4 text-[var(--color-accent)]" />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">{template.name}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{template.description}</p>
+                      <p className="text-sm font-medium text-[var(--color-text-primary)] leading-none">{template.name}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2">{template.description}</p>
                     </div>
                   </DropdownMenuItem>
                 ))}
               </div>
 
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-[var(--color-border-subtle)]" />
               <DropdownMenuItem
-                className="text-center py-2 text-sm text-muted-foreground cursor-pointer"
+                className="text-center py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer rounded-md"
                 onClick={() => router.push("/chat/templates")}
               >
                 View all templates
@@ -140,21 +171,12 @@ const Header = ({ title }: { title: string }) => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="w-px h-6 bg-foreground/10 hidden sm:block" />
-
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            {mounted && theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </Button>
-          <Avatar className="w-8 h-8">
+          {/* User Button / Avatar */}
+          <div className="w-8 h-8 rounded-full border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent)] transition-colors duration-100 overflow-hidden shrink-0 flex items-center justify-center">
             <SignedIn>
-              <UserButton />
+              <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
             </SignedIn>
-          </Avatar>
+          </div>
         </div>
       </header>
 

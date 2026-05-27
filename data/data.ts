@@ -70,22 +70,23 @@ export const projectIcons = [
 ];
 
 export const iconColors = [
-  "text-blue-500 bg-blue-50 border-blue-100",
-  "text-green-500 bg-green-50 border-green-100",
-  "text-purple-500 bg-purple-50 border-purple-100",
-  "text-orange-500 bg-orange-50 border-orange-100",
-  "text-pink-500 bg-pink-50 border-pink-100",
-  "text-indigo-500 bg-indigo-50 border-indigo-100",
-  "text-red-500 bg-red-50 border-red-100",
-  "text-yellow-500 bg-yellow-50 border-yellow-100",
-  "text-teal-500 bg-teal-50 border-teal-100",
-  "text-cyan-500 bg-cyan-50 border-cyan-100",
+  "text-blue-500 bg-blue-500/10 border-blue-500/20",
+  "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+  "text-purple-500 bg-purple-500/10 border-purple-500/20",
+  "text-orange-500 bg-orange-500/10 border-orange-500/20",
+  "text-pink-500 bg-pink-500/10 border-pink-500/20",
+  "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
+  "text-red-500 bg-red-500/10 border-red-500/20",
+  "text-amber-500 bg-amber-500/10 border-amber-500/20",
+  "text-teal-500 bg-teal-500/10 border-teal-500/20",
+  "text-cyan-500 bg-cyan-500/10 border-cyan-500/20",
 ];
 
 export const quickPrompts = [
   "Make a Todo App",
   "Build a Budget tracker website",
   "Simple E-commerce website",
+  "Simple Gallery",
 ];
 
 export const DefaultFiles = {

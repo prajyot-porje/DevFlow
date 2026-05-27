@@ -1,35 +1,36 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { auth } from "@clerk/nextjs/server";
+import { AI_MODEL, extractJSON, generateCompletionWithFallback } from "@/lib/ai-utils";
 
 export const runtime = "nodejs";
 
-const client = new OpenAI({
-  baseURL: "https://router.huggingface.co/v1",
-  apiKey: process.env.HF_TOKEN,
-});
-
-function extractJSON(text: string) {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  const clean = fenced ? fenced[1] : text;
-
-  const start = clean.indexOf("{");
-  const end = clean.lastIndexOf("}");
-  if (start === -1 || end === -1) {
-    throw new Error("No JSON found in response");
-  }
-
-  return clean.slice(start, end + 1);
-}
-
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json();
+    // Verify user is authenticated
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized — please sign in" },
+        { status: 401 }
+      );
+    }
 
-    const completion = await client.chat.completions.create({
-      model: "Qwen/Qwen2.5-Coder-7B-Instruct:nscale",
+    const { prompt, model } = await req.json();
+
+    console.log(`[AI_CODE_ROUTE] User: ${userId} | Model: "${model}"`);
+
+    const completion = await generateCompletionWithFallback({
+      primaryModel: model || AI_MODEL,
       messages: [{ role: "user", content: prompt }],
       temperature: 0.15,
-      max_tokens: 4096,
+      maxTokens: 16384,
+      validate: (text) => {
+        const jsonText = extractJSON(text);
+        const parsed = JSON.parse(jsonText);
+        if (!parsed.files || typeof parsed.files !== "object") {
+          throw new Error("JSON response is missing required 'files' object");
+        }
+      },
     });
 
     const raw = completion.choices[0]?.message?.content;
@@ -39,15 +40,15 @@ export async function POST(req: Request) {
     const parsed = JSON.parse(jsonText);
 
     return NextResponse.json(parsed);
-} catch (err: unknown) {
-  const message =
-    err instanceof Error ? err.message : "Unknown AI_CODE_ERROR";
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Unknown AI_CODE_ERROR";
 
-  console.error("AI_CODE_ERROR:", message);
+    console.error("AI_CODE_ERROR:", message);
 
-  return NextResponse.json(
-    { error: message },
-    { status: 500 }
-  );
-}
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
+  }
 }
