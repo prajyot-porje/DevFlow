@@ -51,7 +51,7 @@ export function Features() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-            className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[16px] p-8 shadow-[0_4px_8px_rgba(2,18,47,0.5),0_2px_4px_rgba(2,18,47,0.3)] hover:border-[var(--color-border-strong)] hover:shadow-[0_8px_16px_rgba(2,18,47,0.6),0_4px_8px_rgba(2,18,47,0.4)] transition-[border-color,box-shadow] duration-200 ease-soft"
+            className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[16px] p-8 shadow-[0_4px_8px_rgba(14,12,21,0.5),0_2px_4px_rgba(14,12,21,0.3)] hover:border-[var(--color-border-strong)] hover:shadow-[0_8px_16px_rgba(14,12,21,0.6),0_4px_8px_rgba(14,12,21,0.4)] transition-[border-color,box-shadow] duration-200 ease-soft"
           >
             <div className="w-10 h-10 bg-[var(--color-bg-elevated)] rounded-xl flex items-center justify-center mb-6 border border-[var(--color-border-default)]">
               <Sparkles className="w-6 h-6 text-[var(--color-accent)]" />

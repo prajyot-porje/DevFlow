@@ -8,39 +8,40 @@
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
+  --font-logo: var(--font-logo);
 }
 
-/* === DARK MODE (default) — Linear-inspired warmer navy === */
+/* === DARK MODE (default) — Frosted Amethyst: purple-tinted blacks === */
 :root {
-  --color-bg-page:         #0A0F1A;   /* Warmer near-black — less fatiguing */
-  --color-bg-surface:      #111827;   /* Clear card separation from page */
-  --color-bg-elevated:     #1E293B;   /* Prominent elevation — dropdowns, modals */
-  --color-bg-hover:        #253349;   /* Hover on surfaces */
-  --color-bg-inset:        #060B14;   /* Inset areas — code blocks, input fields */
+  --color-bg-page:         #0e0c15;   /* Very dark purple-black */
+  --color-bg-surface:      #16141f;   /* Dark plum surface */
+  --color-bg-elevated:     #1f1c2b;   /* Elevated with purple tint */
+  --color-bg-hover:        #2a2639;   /* Hover — noticeable purple */
+  --color-bg-inset:        #08070e;   /* Deep inset */
 
-  --color-border-subtle:   rgba(148, 163, 184, 0.08);   /* Barely visible */
-  --color-border-default:  rgba(148, 163, 184, 0.14);   /* Standard borders */
-  --color-border-strong:   rgba(148, 163, 184, 0.25);   /* Emphasized borders */
+  --color-border-subtle:   rgba(142, 138, 156, 0.10);   /* Barely visible */
+  --color-border-default:  rgba(142, 138, 156, 0.16);   /* Standard borders */
+  --color-border-strong:   rgba(142, 138, 156, 0.28);   /* Emphasized borders */
 
-  --color-text-primary:    #F0ECDD;   /* Warm cream — distinctive primary text */
-  --color-text-secondary:  #94A3B8;   /* Slate-400 — warmer supporting text */
-  --color-text-tertiary:   #475569;   /* Slate-600 — hints, placeholders */
-  --color-text-disabled:   #334155;   /* Slate-700 — disabled text */
+  --color-text-primary:    #eeedf2;   /* Soft white */
+  --color-text-secondary:  #8e8a9c;   /* Muted lavender-gray */
+  --color-text-tertiary:   #5d5870;   /* Purple-gray hints */
+  --color-text-disabled:   #3d3850;   /* Disabled text */
 
-  --color-accent:          #0EA5E9;   /* Cyan-500 — single accent */
-  --color-accent-glow:     rgba(14, 165, 233, 0.12);
-  --color-accent-light:    #38BDF8;   /* Cyan-400 — hover/highlight */
+  --color-accent:          #8c60f3;   /* Violet-500 — primary accent */
+  --color-accent-glow:     rgba(140, 96, 243, 0.15);
+  --color-accent-light:    #a78bfa;   /* Violet-400 — hover/highlight */
 
-  --color-code-bg:         #060B14;   /* Deep inset for code blocks */
-  --color-code-text:       #38BDF8;   /* Cyan on code */
+  --color-code-bg:         #08070e;   /* Deep purple inset for code blocks */
+  --color-code-text:       #b49cfd;   /* Lighter violet for readability */
 
   /* Chat-specific semantic tokens */
-  --color-bg-chat-user:    rgba(14, 165, 233, 0.08);   /* User message tint */
-  --color-bg-chat-ai:      #111827;   /* AI message — same as surface */
+  --color-bg-chat-user:    rgba(140, 96, 243, 0.08);   /* User message tint */
+  --color-bg-chat-ai:      #16141f;   /* AI message — same as surface */
 
   /* Skeleton/loading tokens */
-  --color-bg-skeleton:     #1E293B;   /* Skeleton shimmer base */
-  --color-bg-skeleton-shine: #253349; /* Skeleton shimmer highlight */
+  --color-bg-skeleton:     #1f1c2b;   /* Skeleton shimmer base */
+  --color-bg-skeleton-shine: #2a2639; /* Skeleton shimmer highlight */
 
   --color-success:         #22C55E;
   --color-warning:         #F59E0B;
@@ -59,13 +60,13 @@
   --text-4xl:  4.209rem;   /* 67.3px */
   --text-5xl:  5.61rem;    /* 89.8px */
 
-  /* Shadows - Dark Mode (warmer base) */
+  /* Shadows - Dark Mode (purple-tinted) */
   --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md:  0 4px 8px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
   --shadow-lg:  0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.25);
   --shadow-xl:  0 16px 32px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3);
-  --shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(14, 165, 233, 0.2);
+  --shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(140, 96, 243, 0.2);
 
   /* Easing curves */
   --ease-out:       cubic-bezier(0.16, 1, 0.3, 1);
@@ -97,38 +98,38 @@
   --ring: var(--color-accent);
 }
 
-/* === LIGHT MODE === */
+/* === LIGHT MODE — Frosted Amethyst: lavender frost === */
 [data-theme="light"],
 .light {
-  --color-bg-page:         #F0ECDD;   /* Warm cream — distinctive */
-  --color-bg-surface:      #FDFAF3;   /* Near white with warmth */
-  --color-bg-elevated:     #FFFFFF;
-  --color-bg-hover:        #F5F0E2;
-  --color-bg-inset:        #EAE6D6;   /* Inset for code blocks */
+  --color-bg-page:         #fdfcfe;   /* Almost white, barely violet */
+  --color-bg-surface:      #f8f6fc;   /* Near-white violet tint */
+  --color-bg-elevated:     #ffffff;
+  --color-bg-hover:        #efeaf8;   /* Noticeably lavender hover */
+  --color-bg-inset:        #e4e0ec;   /* Lavender inset */
 
-  --color-border-subtle:   rgba(53, 68, 86, 0.08);
-  --color-border-default:  rgba(53, 68, 86, 0.15);
-  --color-border-strong:   rgba(53, 68, 86, 0.28);
+  --color-border-subtle:   rgba(86, 83, 95, 0.07);
+  --color-border-default:  rgba(86, 83, 95, 0.13);
+  --color-border-strong:   rgba(86, 83, 95, 0.22);
 
-  --color-text-primary:    #02122F;   /* Navy-900 — primary text on cream */
-  --color-text-secondary:  #354456;   /* Mid navy — supporting text */
-  --color-text-tertiary:   #7A8FA6;   /* Muted — hints, placeholders */
-  --color-text-disabled:   #B5BECA;
+  --color-text-primary:    #1e1a2d;   /* Deep purple-navy */
+  --color-text-secondary:  #4f4b5c;   /* Warm mid-gray */
+  --color-text-tertiary:   #8e8a9c;   /* Muted lavender-gray */
+  --color-text-disabled:   #cccad2;
 
-  --color-accent:          #0369A1;   /* Cyan-700 — darker for light mode contrast */
-  --color-accent-glow:     rgba(3, 105, 161, 0.10);
-  --color-accent-light:    #0EA5E9;
+  --color-accent:          #7c3aed;   /* Deeper violet for contrast */
+  --color-accent-glow:     rgba(124, 58, 237, 0.08);
+  --color-accent-light:    #8c60f3;
 
-  --color-code-bg:         #EAE6D6;   /* Slightly darker cream for code */
-  --color-code-text:       #0369A1;
+  --color-code-bg:         #ede8f5;   /* Softer lavender than inset */
+  --color-code-text:       #6d28d9;   /* Violet-700 */
 
   /* Chat-specific semantic tokens */
-  --color-bg-chat-user:    rgba(3, 105, 161, 0.06);
-  --color-bg-chat-ai:      #FDFAF3;
+  --color-bg-chat-user:    rgba(124, 58, 237, 0.06);
+  --color-bg-chat-ai:      #f8f6fc;
 
   /* Skeleton/loading tokens */
-  --color-bg-skeleton:     #E8E2CE;
-  --color-bg-skeleton-shine: #D9D1B8;
+  --color-bg-skeleton:     #e4e0ec;
+  --color-bg-skeleton-shine: #cccad2;
 
   --color-success:         #16A34A;
   --color-warning:         #D97706;
@@ -136,11 +137,11 @@
   --color-online:          #16A34A;
 
   /* Shadows - Light Mode */
-  --shadow-xs:  0 1px 2px rgba(35, 53, 77, 0.08);
-  --shadow-sm:  0 2px 4px rgba(35, 53, 77, 0.06), 0 1px 2px rgba(35, 53, 77, 0.10);
-  --shadow-md:  0 4px 8px rgba(35, 53, 77, 0.08), 0 2px 4px rgba(35, 53, 77, 0.06);
-  --shadow-lg:  0 8px 16px rgba(35, 53, 77, 0.10), 0 4px 8px rgba(35, 53, 77, 0.08);
-  --shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(3, 105, 161, 0.15);
+  --shadow-xs:  0 1px 2px rgba(30, 26, 45, 0.06);
+  --shadow-sm:  0 2px 4px rgba(30, 26, 45, 0.05), 0 1px 2px rgba(30, 26, 45, 0.08);
+  --shadow-md:  0 4px 8px rgba(30, 26, 45, 0.06), 0 2px 4px rgba(30, 26, 45, 0.05);
+  --shadow-lg:  0 8px 16px rgba(30, 26, 45, 0.08), 0 4px 8px rgba(30, 26, 45, 0.06);
+  --shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(124, 58, 237, 0.15);
 
   --background: var(--color-bg-page);
   --foreground: var(--color-text-primary);
@@ -188,25 +189,30 @@
   --color-sidebar-border: var(--color-border-subtle);
   --color-sidebar-ring: var(--color-accent);
 
-  /* Navy/Cream/Accent colors — updated to match new palette */
-  --color-navy-950: #0A0F1A;
-  --color-navy-900: #111827;
-  --color-navy-700: #1E293B;
-  --color-navy-500: #475569;
-  --color-navy-300: #94A3B8;
+  /* Surface colors — dark mode bg shades (replaces navy) */
+  --color-surface-950: #0e0c15;
+  --color-surface-900: #16141f;
+  --color-surface-700: #1f1c2b;
+  --color-surface-500: #5d5870;
+  --color-surface-300: #8e8a9c;
 
-  --color-cream-50:  #F0ECDD;
-  --color-cream-100: #E8E2CE;
-  --color-cream-200: #D9D1B8;
-  --color-cream-400: #B5A882;
+  /* Base colors — light mode bg shades (replaces cream) */
+  --color-base-50:  #fdfcfe;
+  --color-base-100: #f8f6fc;
+  --color-base-200: #e4e0ec;
+  --color-base-400: #cccad2;
 
-  --color-accent-400: #38BDF8;
-  --color-accent-500: #0EA5E9;
-  --color-accent-700: #0369A1;
+  /* Violet accent family (replaces cyan accent) */
+  --color-violet-300: #b49cfd;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8c60f3;
+  --color-violet-600: #7c3aed;
+  --color-violet-700: #6d28d9;
 
   --font-heading: var(--font-heading), system-ui;
   --font-body: var(--font-body), system-ui;
   --font-mono: var(--font-mono), monospace;
+  --font-logo: var(--font-logo), sans-serif;
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -250,13 +256,13 @@ body {
   font-family: var(--font-body);
 }
 
-/* Dark mode grid texture — updated for warmer palette */
+/* Dark mode grid texture — updated for Frosted Amethyst palette */
 html[data-theme="dark"] body,
 :root:not([data-theme="light"]):not(.light) body {
   background-image:
-    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(14, 165, 233, 0.04) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 100% 80%, rgba(30, 41, 59, 0.4) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%2394A3B8' fill-opacity='0.04'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(140, 96, 243, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 100% 80%, rgba(31, 28, 43, 0.4) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%238e8a9c' fill-opacity='0.04'/%3E%3C/svg%3E");
 }
 
 /* Hide scrollbar */
@@ -275,4 +281,15 @@ html[data-theme="dark"] body,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Persistent tab content styles to prevent unmounting and iframe reloads */
+.tab-content-persist[data-state="inactive"] {
+  position: absolute !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
 }

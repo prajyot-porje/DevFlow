@@ -124,7 +124,7 @@ const Settings = () => {
   const [selectedModel, setSelectedModel] = useState(MODEL_OPTIONS[0].value)
   const [activeTab, setActiveTab] = useState("account")
   const { theme, setTheme } = useTheme()
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
   const usage = useQuery(api.users.getUserConversationUsage, user ? { uid: user.id } : "skip")
 
   useEffect(() => {
@@ -197,8 +197,25 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
-              <div className="p-6 flex justify-center">
-                <UserProfile routing="hash" />
+              <div className="p-6 flex justify-center min-h-[600px] w-full relative">
+                {!isLoaded ? (
+                  <div className="w-full max-w-[700px] flex flex-col gap-6 animate-pulse p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)]" />
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 bg-[var(--color-bg-elevated)] rounded-md w-1/3" />
+                        <div className="h-3 bg-[var(--color-bg-elevated)] rounded-md w-1/2" />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="h-10 bg-[var(--color-bg-elevated)] rounded-md w-full" />
+                      <div className="h-10 bg-[var(--color-bg-elevated)] rounded-md w-full" />
+                      <div className="h-44 bg-[var(--color-bg-elevated)] rounded-md w-full" />
+                    </div>
+                  </div>
+                ) : (
+                  <UserProfile routing="hash" />
+                )}
               </div>
             </div>
           </div>

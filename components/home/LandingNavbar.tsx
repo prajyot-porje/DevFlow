@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
@@ -13,6 +13,7 @@ export function LandingNavbar() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const navRef = useRef<HTMLElement>(null);
@@ -79,7 +80,7 @@ export function LandingNavbar() {
         ref={navRef}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-[var(--color-bg-page)]/80 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-3 shadow-[0_4px_24px_rgba(2,18,47,0.05)]"
+            ? "bg-[var(--color-bg-page)]/80 backdrop-blur-md border-b border-[var(--color-border-subtle)] py-3 shadow-[0_4px_24px_rgba(14,12,21,0.05)]"
             : "bg-transparent py-5"
         }`}
       >
@@ -90,11 +91,12 @@ export function LandingNavbar() {
               className="flex items-center gap-2.5 cursor-pointer group"
               onClick={() => router.push("/")}
             >
-              <div className="w-8 h-8 bg-linear-to-br from-navy-950 to-navy-700 dark:from-accent-400 dark:to-accent-500 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-[0_0_12px_rgba(14,165,233,0.3)] transition-all duration-300">
-                <Sparkles className="w-4 h-4 text-white dark:text-navy-950" />
+              <div className="w-8 h-8 bg-linear-to-br from-violet-600 to-violet-700 dark:from-violet-400 dark:to-violet-500 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-[0_0_12px_rgba(140,96,243,0.3)] transition-all duration-300">
+                <Sparkles className="w-4 h-4 text-white dark:text-surface-950" />
               </div>
-              <span className="font-heading font-bold text-xl tracking-tight text-[var(--color-text-primary)]">
-                DevFlow
+              <span className="font-logo font-semibold text-[22px] tracking-normal">
+                <span className="text-[var(--color-text-primary)]">Dev </span>
+                <span className="text-[var(--color-accent)]">Flow</span>
               </span>
             </div>
 
@@ -158,9 +160,14 @@ export function LandingNavbar() {
               
               <SignedIn>
                 <button
-                  onClick={() => router.push("/chat")}
-                  className="px-5 py-2 rounded-full font-body font-semibold text-sm bg-[var(--color-accent)] text-white hover:brightness-110 shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.25)] transition-all duration-200 cursor-pointer"
+                  onClick={() => {
+                    setIsNavigating(true);
+                    router.push("/chat");
+                  }}
+                  disabled={isNavigating}
+                  className="px-5 py-2 rounded-full font-body font-semibold text-sm bg-[var(--color-accent)] text-white hover:brightness-110 shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(140,96,243,0.25)] transition-all duration-200 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
+                  {isNavigating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Dashboard
                 </button>
                 <div className="ml-2 flex items-center">
@@ -235,11 +242,14 @@ export function LandingNavbar() {
               <SignedIn>
                 <button
                   onClick={() => {
+                    setIsNavigating(true);
                     closeMobileMenu();
                     router.push("/chat");
                   }}
-                  className="w-full py-3 rounded-full font-body font-bold text-sm bg-[var(--color-accent)] text-white cursor-pointer"
+                  disabled={isNavigating}
+                  className="w-full py-3 rounded-full font-body font-bold text-sm bg-[var(--color-accent)] text-white cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                 >
+                  {isNavigating && <Loader2 className="w-4 h-4 animate-spin" />}
                   Dashboard
                 </button>
               </SignedIn>

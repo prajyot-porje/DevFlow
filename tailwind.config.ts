@@ -9,29 +9,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'navy': {
-          950: '#0A0F1A',
-          900: '#111827',
-          700: '#1E293B',
-          500: '#475569',
-          300: '#94A3B8',
+        'surface': {
+          950: '#0e0c15',
+          900: '#16141f',
+          700: '#1f1c2b',
+          500: '#5d5870',
+          300: '#8e8a9c',
         },
-        'cream': {
-          50:  '#F0ECDD',
-          100: '#E8E2CE',
-          200: '#D9D1B8',
-          400: '#B5A882',
+        'base': {
+          50:  '#fdfcfe',
+          100: '#f8f6fc',
+          200: '#e4e0ec',
+          400: '#cccad2',
         },
-        'accent': {
-          400: '#38BDF8',
-          500: '#0EA5E9',
-          700: '#0369A1',
+        'violet': {
+          300: '#b49cfd',
+          400: '#a78bfa',
+          500: '#8c60f3',
+          600: '#7c3aed',
+          700: '#6d28d9',
         },
       },
       fontFamily: {
         heading: ['var(--font-heading)', 'system-ui'],
         body:    ['var(--font-body)', 'system-ui'],
         mono:    ['var(--font-mono)', 'monospace'],
+        logo:    ['var(--font-logo)', 'system-ui'],
       },
       borderRadius: {
         'sm':   '4px',

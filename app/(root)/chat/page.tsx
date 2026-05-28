@@ -95,13 +95,16 @@ export default function DevFlow() {
                 placeholder="Describe what you want to build..."
                 value={userInput}
                 onChange={(e) => setuserInput(e.target.value)}
+                disabled={isLoading}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault()
-                    OnGenerate(userInput)
+                    if (!isLoading) {
+                      OnGenerate(userInput)
+                    }
                   }
                 }}
-                className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[18px] py-4 pr-14 pl-5 min-h-20 max-h-60 w-full resize-none overflow-y-auto font-body font-normal text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.15)]"
+                className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[18px] py-4 pr-14 pl-5 min-h-20 max-h-60 w-full resize-none overflow-y-auto font-body font-normal text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   transition: "border-color 200ms, box-shadow 200ms",
                 }}
@@ -138,7 +141,8 @@ export default function DevFlow() {
                 {quickPrompts.map((suggestion, index) => (
                   <button
                     key={index}
-                    className="bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl px-4 py-2.5 font-body font-medium text-[13px] md:text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-default)] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer transition-all duration-200"
+                    disabled={isLoading}
+                    className="bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl px-4 py-2.5 font-body font-medium text-[13px] md:text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-default)] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => setuserInput(suggestion)}
                   >
                     {suggestion}

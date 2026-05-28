@@ -13,21 +13,21 @@
 **Stack:** Next.js, TypeScript, Tailwind CSS, Clerk (auth)  
 **Scope:** Full UI overhaul of landing page, auth page, and dashboard. No functionality changes.  
 **Goal:** Transform a basic, generic UI into a premium, distinctive SaaS product that does NOT look AI-generated.  
-**Design Direction:** Arctic Monochrome — cold navy blacks, warm cream light mode, precise cyan accent. Technical precision meets editorial restraint.
+**Design Direction:** Frosted Amethyst — purple-tinted dark mode, lavender frost light mode. Technical precision meets elegant, vibrant accents.
 
 ---
 
 ## 1. Design Philosophy
 
-**The Core Aesthetic:** Precision without coldness. The palette is technical (navy, slate, cyan) but the light mode introduces a warm cream (#F0ECDD) that creates a distinctive warm/cold tension — unusual and memorable. No purple gradients. No generic AI startup look.
+**The Core Aesthetic:** Frosted Amethyst — purple-tinted dark mode, lavender frost light mode. Technical precision meets elegant, vibrant accents. It creates a distinctive premium feel with deep plum tones, frosted lavender, and precise violet accents.
 
 **Reference points:** Warp terminal × Linear × A high-end editorial magazine  
 **Anti-references:** Vercel v0, Framer AI, Cursor (avoid copying their exact aesthetic language)
 
 **Three rules that govern every decision:**
 1. **One thing at a time.** No competing focal points on any section. The eye must always know where to go first.
-2. **Restraint is the accent.** Cyan (#0EA5E9) appears only on: primary CTA buttons, active/selected states, accent text in hero, and code syntax. Nowhere else.
-3. **Depth through layering.** Dark surfaces are built in layers (#070D14 → #02122F → #23354D → #495B7D) — not through shadows alone.
+2. **Restraint is the accent.** Violet (#8c60f3) appears only on: primary CTA buttons, active/selected states, accent text in hero, and code syntax. Nowhere else.
+3. **Depth through layering.** Dark surfaces are built in layers (#0e0c15 → #16141f → #1f1c2b → #2a2639) — not through shadows alone.
 
 ---
 
@@ -36,23 +36,22 @@
 ### 2.1 Raw Palette
 
 ```
-NAVY FAMILY (dark-mode surfaces)
-  --navy-950: #070D14   /* Page background, deepest level */
-  --navy-900: #02122F   /* Card backgrounds, primary surface */
-  --navy-700: #23354D   /* Elevated cards, borders on dark */
-  --navy-500: #495B7D   /* Muted UI elements, disabled states */
-  --navy-300: #8BA3C5   /* Secondary text on dark, icons on dark */
+SURFACE FAMILY (dark-mode surfaces)
+  --surface-950: #0e0c15   /* Page background, deepest level */
+  --surface-900: #16141f   /* Card backgrounds, primary surface */
+  --surface-800: #1f1c2b   /* Elevated cards, borders on dark */
+  --surface-700: #2a2639   /* Hover states on dark */
 
-CREAM FAMILY (light-mode surfaces)
-  --cream-50:  #F0ECDD  /* Page background — light mode */
-  --cream-100: #E8E2CE  /* Card surfaces — light mode */
-  --cream-200: #D9D1B8  /* Borders — light mode */
-  --cream-400: #B5A882  /* Muted text — light mode */
+BASE FAMILY (light-mode surfaces)
+  --base-50:  #fdfcfe  /* Page background — light mode */
+  --base-100: #f8f6fc  /* Card surfaces — light mode */
+  --base-200: #e4e0ec  /* Borders — light mode */
+  --base-300: #cccad2  /* Muted elements — light mode */
 
-CYAN ACCENT (the single accent — use sparingly)
-  --cyan-400: #38BDF8   /* Highlights, hover glow */
-  --cyan-500: #0EA5E9   /* Primary accent, CTAs, active states */
-  --cyan-700: #0369A1   /* Accent on light mode (higher contrast) */
+VIOLET ACCENT (the single accent — use sparingly)
+  --violet-400: #a78bfa   /* Highlights, hover glow */
+  --violet-500: #8c60f3   /* Primary accent, CTAs, active states */
+  --violet-700: #7c3aed   /* Accent on light mode (higher contrast) */
 
 NEUTRAL
   --white:     #FFFFFF
@@ -66,26 +65,26 @@ Define these as CSS custom properties in `globals.css`. Use ONLY these tokens in
 ```css
 :root {
   /* === DARK MODE (default) === */
-  --color-bg-page:         #070D14;
-  --color-bg-surface:      #02122F;
-  --color-bg-elevated:     #23354D;
-  --color-bg-hover:        #2A3F5C;
+  --color-bg-page:         #0e0c15;
+  --color-bg-surface:      #16141f;
+  --color-bg-elevated:     #1f1c2b;
+  --color-bg-hover:        #2a2639;
 
-  --color-border-subtle:   rgba(139, 163, 197, 0.12);
-  --color-border-default:  rgba(139, 163, 197, 0.20);
-  --color-border-strong:   rgba(139, 163, 197, 0.35);
+  --color-border-subtle:   rgba(142, 138, 156, 0.10);
+  --color-border-default:  rgba(142, 138, 156, 0.16);
+  --color-border-strong:   rgba(142, 138, 156, 0.28);
 
-  --color-text-primary:    #F0ECDD;   /* Warm cream — primary text on dark */
-  --color-text-secondary:  #8BA3C5;   /* Navy-300 — supporting text */
-  --color-text-tertiary:   #495B7D;   /* Navy-500 — hints, placeholders */
-  --color-text-disabled:   #2D3E56;
+  --color-text-primary:    #eeedf2;
+  --color-text-secondary:  #8e8a9c;
+  --color-text-tertiary:   #5d5870;
+  --color-text-disabled:   #3d3850;
 
-  --color-accent:          #0EA5E9;   /* Cyan-500 — single accent */
-  --color-accent-glow:     rgba(14, 165, 233, 0.15);
-  --color-accent-light:    #38BDF8;   /* Cyan-400 — hover/highlight */
+  --color-accent:          #8c60f3;
+  --color-accent-glow:     rgba(140, 96, 243, 0.15);
+  --color-accent-light:    #a78bfa;
 
-  --color-code-bg:         #020C1E;   /* Deeper than page bg for code blocks */
-  --color-code-text:       #38BDF8;   /* Cyan on code */
+  --color-code-bg:         #08070e;
+  --color-code-text:       #b49cfd;
 
   --color-success:         #22C55E;
   --color-warning:         #F59E0B;
@@ -96,26 +95,26 @@ Define these as CSS custom properties in `globals.css`. Use ONLY these tokens in
 [data-theme="light"],
 .light {
   /* === LIGHT MODE === */
-  --color-bg-page:         #F0ECDD;   /* Warm cream — distinctive */
-  --color-bg-surface:      #FDFAF3;   /* Near white with warmth */
-  --color-bg-elevated:     #FFFFFF;
-  --color-bg-hover:        #F5F0E2;
+  --color-bg-page:         #fdfcfe;
+  --color-bg-surface:      #f8f6fc;
+  --color-bg-elevated:     #ffffff;
+  --color-bg-hover:        #efeaf8;
 
-  --color-border-subtle:   rgba(53, 68, 86, 0.08);
-  --color-border-default:  rgba(53, 68, 86, 0.15);
-  --color-border-strong:   rgba(53, 68, 86, 0.28);
+  --color-border-subtle:   rgba(86, 83, 95, 0.07);
+  --color-border-default:  rgba(86, 83, 95, 0.13);
+  --color-border-strong:   rgba(86, 83, 95, 0.22);
 
-  --color-text-primary:    #02122F;   /* Navy-900 — primary text on cream */
-  --color-text-secondary:  #354456;   /* Mid navy — supporting text */
-  --color-text-tertiary:   #7A8FA6;   /* Muted — hints, placeholders */
-  --color-text-disabled:   #B5BECA;
+  --color-text-primary:    #1e1a2d;
+  --color-text-secondary:  #4f4b5c;
+  --color-text-tertiary:   #8e8a9c;
+  --color-text-disabled:   #cccad2;
 
-  --color-accent:          #0369A1;   /* Cyan-700 — darker for light mode contrast */
-  --color-accent-glow:     rgba(3, 105, 161, 0.10);
-  --color-accent-light:    #0EA5E9;
+  --color-accent:          #7c3aed;
+  --color-accent-glow:     rgba(124, 58, 237, 0.08);
+  --color-accent-light:    #8c60f3;
 
-  --color-code-bg:         #EAE6D6;   /* Slightly darker cream for code */
-  --color-code-text:       #0369A1;
+  --color-code-bg:         #ede8f5;
+  --color-code-text:       #6d28d9;
 
   --color-success:         #16A34A;
   --color-warning:         #D97706;
@@ -128,16 +127,16 @@ Define these as CSS custom properties in `globals.css`. Use ONLY these tokens in
 
 | Use case | Dark token | Light token |
 |---|---|---|
-| Page bg | `--color-bg-page` (#070D14) | `--color-bg-page` (#F0ECDD) |
-| Card bg | `--color-bg-surface` (#02122F) | `--color-bg-surface` (#FDFAF3) |
-| Elevated card | `--color-bg-elevated` (#23354D) | `--color-bg-elevated` (#FFFFFF) |
-| Primary text | `--color-text-primary` (#F0ECDD) | `--color-text-primary` (#02122F) |
-| Secondary text | `--color-text-secondary` (#8BA3C5) | `--color-text-secondary` (#354456) |
-| Accent/CTA | `--color-accent` (#0EA5E9) | `--color-accent` (#0369A1) |
+| Page bg | `--color-bg-page` (#0e0c15) | `--color-bg-page` (#fdfcfe) |
+| Card bg | `--color-bg-surface` (#16141f) | `--color-bg-surface` (#f8f6fc) |
+| Elevated card | `--color-bg-elevated` (#1f1c2b) | `--color-bg-elevated` (#ffffff) |
+| Primary text | `--color-text-primary` (#eeedf2) | `--color-text-primary` (#1e1a2d) |
+| Secondary text | `--color-text-secondary` (#8e8a9c) | `--color-text-secondary` (#4f4b5c) |
+| Accent/CTA | `--color-accent` (#8c60f3) | `--color-accent` (#7c3aed) |
 | Code blocks | `--color-code-bg` / `--color-code-text` | same tokens |
 | Borders | `--color-border-default` | `--color-border-default` |
 
-**RULE:** Accent color (#0EA5E9) must appear on NO MORE than 10% of any viewport. If you're using it on 3+ elements in one section, you're overusing it.
+**RULE:** Accent color (#8c60f3) must appear on NO MORE than 10% of any viewport. If you're using it on 3+ elements in one section, you're overusing it.
 
 ---
 
@@ -334,21 +333,21 @@ Hero (desktop):    pt-128px pb-96px
 Light source: directly above (0deg, top). All shadows have positive Y offset.
 
 ```css
-/* Dark mode shadows — use rgba with navy color */
---shadow-xs:  0 1px 2px rgba(2, 18, 47, 0.5);
---shadow-sm:  0 2px 4px rgba(2, 18, 47, 0.4), 0 1px 2px rgba(2, 18, 47, 0.6);
---shadow-md:  0 4px 8px rgba(2, 18, 47, 0.5), 0 2px 4px rgba(2, 18, 47, 0.3);
---shadow-lg:  0 8px 16px rgba(2, 18, 47, 0.6), 0 4px 8px rgba(2, 18, 47, 0.4);
---shadow-xl:  0 16px 32px rgba(2, 18, 47, 0.7), 0 8px 16px rgba(2, 18, 47, 0.5);
+/* Dark mode shadows — use rgba with background colors */
+--shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.4);
+--shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+--shadow-md:  0 4px 8px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+--shadow-lg:  0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.25);
+--shadow-xl:  0 16px 32px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3);
 
 /* Accent glow — only on interactive elements with accent color */
---shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(14, 165, 233, 0.2);
+--shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(140, 96, 243, 0.2);
 
 /* Light mode shadows — warmer, softer */
---shadow-xs-light:  0 1px 2px rgba(35, 53, 77, 0.08);
---shadow-sm-light:  0 2px 4px rgba(35, 53, 77, 0.06), 0 1px 2px rgba(35, 53, 77, 0.10);
---shadow-md-light:  0 4px 8px rgba(35, 53, 77, 0.08), 0 2px 4px rgba(35, 53, 77, 0.06);
---shadow-lg-light:  0 8px 16px rgba(35, 53, 77, 0.10), 0 4px 8px rgba(35, 53, 77, 0.08);
+--shadow-xs-light:  0 1px 2px rgba(86, 83, 95, 0.08);
+--shadow-sm-light:  0 2px 4px rgba(86, 83, 95, 0.06), 0 1px 2px rgba(86, 83, 95, 0.10);
+--shadow-md-light:  0 4px 8px rgba(86, 83, 95, 0.08), 0 2px 4px rgba(86, 83, 95, 0.06);
+--shadow-lg-light:  0 8px 16px rgba(86, 83, 95, 0.10), 0 4px 8px rgba(86, 83, 95, 0.08);
 ```
 
 Usage mapping:
@@ -876,12 +875,12 @@ Apply only to `--color-bg-page` surfaces (page backgrounds, NOT cards):
 
 ```css
 background-image:
-  radial-gradient(ellipse 80% 50% at 0% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 55%),
-  radial-gradient(ellipse 50% 40% at 100% 80%, rgba(35, 53, 77, 0.3) 0%, transparent 50%),
-  url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%238BA3C5' fill-opacity='0.06'/%3E%3C/svg%3E");
+  radial-gradient(ellipse 80% 50% at 0% 0%, rgba(140, 96, 243, 0.05) 0%, transparent 55%),
+  radial-gradient(ellipse 50% 40% at 100% 80%, rgba(42, 38, 57, 0.3) 0%, transparent 50%),
+  url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%238e8a9c' fill-opacity='0.06'/%3E%3C/svg%3E");
 ```
 
-This creates: subtle cyan glow top-left + navy depth bottom-right + faint dot grid.  
+This creates: subtle violet glow top-left + dark plum depth bottom-right + faint dot grid.  
 **Do NOT apply to cards, modals, or sidebar** — page bg only.
 
 Light mode: No texture. Clean cream surface only.
@@ -896,23 +895,25 @@ Add to `tailwind.config.ts`:
 theme: {
   extend: {
     colors: {
-      'navy': {
-        950: '#070D14',
-        900: '#02122F',
-        700: '#23354D',
-        500: '#495B7D',
-        300: '#8BA3C5',
+      'surface': {
+        950: '#0e0c15',
+        900: '#16141f',
+        700: '#1f1c2b',
+        500: '#5d5870',
+        300: '#8e8a9c',
       },
-      'cream': {
-        50:  '#F0ECDD',
-        100: '#E8E2CE',
-        200: '#D9D1B8',
-        400: '#B5A882',
+      'base': {
+        50:  '#fdfcfe',
+        100: '#f8f6fc',
+        200: '#e4e0ec',
+        400: '#cccad2',
       },
-      'accent': {
-        400: '#38BDF8',
-        500: '#0EA5E9',
-        700: '#0369A1',
+      'violet': {
+        300: '#b49cfd',
+        400: '#a78bfa',
+        500: '#8c60f3',
+        600: '#7c3aed',
+        700: '#6d28d9',
       },
     },
     fontFamily: {
@@ -949,7 +950,7 @@ theme: {
 
 - Use `var(--color-*)` tokens everywhere — never hardcode hex in components
 - Apply `font-heading` (Onest) for ALL headings, `font-body` (Figtree) for ALL UI text
-- Use accent color (#0EA5E9) only: hero accent word, primary CTAs, active states, code text
+- Use accent color (#8c60f3) only: hero accent word, primary CTAs, active states, code text
 - Apply dot grid texture to page bg in dark mode only
 - Use `focus-visible` (not `focus`) for keyboard navigation styles
 - Add `prefers-reduced-motion` override to all animation blocks
@@ -963,9 +964,9 @@ theme: {
 - Apply gradient text to hero headline — solid accent color only
 - Use `transition: all` — always specify the property
 - Add shadows to the page background itself
-- Use cyan accent on more than 2–3 elements per section
+- Use violet accent on more than 2–3 elements per section
 - Use purple, teal, or any color outside the defined palette
-- Apply card bg (#02122F) as page bg or vice versa — maintain the 3-level depth system
+- Apply card bg (#16141f) as page bg or vice versa — maintain the 3-level depth system
 - Use `rgba(0,0,0,0.1)` as the only shadow
 - Skip hover/focus/active states on any clickable element
 - Center-align section content except in CTA and "How it works" sections

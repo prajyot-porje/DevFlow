@@ -164,7 +164,8 @@ export default function ChatWorkspacePage() {
                   {/* ── Chat Tab ── */}
                   <TabsContent
                     value="chat"
-                    className="flex-1 flex flex-col mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:zoom-in-95 duration-300"
+                    forceMount
+                    className="tab-content-persist flex-1 flex flex-col mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:zoom-in-95 duration-300"
                   >
                     {loadingHistory ? (
                       <ChatTabSkeleton />
@@ -291,7 +292,8 @@ export default function ChatWorkspacePage() {
                   {/* ── Code Tab ── */}
                   <TabsContent
                     value="code"
-                    className="flex-1 flex mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar"
+                    forceMount
+                    className="tab-content-persist flex-1 flex mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar"
                   >
                     {loadingHistory ? (
                       <CodeTabSkeleton />
@@ -326,7 +328,8 @@ export default function ChatWorkspacePage() {
                   {/* ── Preview Tab ── */}
                   <TabsContent
                     value="preview"
-                    className="flex-1 flex flex-col mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar"
+                    forceMount
+                    className="tab-content-persist flex-1 flex flex-col mx-4 md:mx-6 mt-3 md:mt-4 overflow-auto min-h-0 hide-scrollbar"
                   >
                     {loadingHistory ? (
                       <PreviewTabSkeleton />

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Onest, Figtree, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import ClientProviders from "./ClientProviders";
@@ -29,8 +30,14 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const gradientFont = localFont({
+  src: "../public/fonts/dafontsfree-Net-Gradient-Medium.ttf",
+  variable: "--font-logo",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "DevFlow",
+  title: "Dev Flow",
   description: "Build Beautiful UIs with AI Magic",
 };
 
@@ -43,7 +50,7 @@ export default function RootLayout({
     <>
 
       <html lang="en" suppressHydrationWarning>
-        <body className={`${onest.variable} ${figtree.variable} ${jetbrainsMono.variable}`}>
+        <body className={`${onest.variable} ${figtree.variable} ${jetbrainsMono.variable} ${gradientFont.variable}`}>
           <NextTopLoader
             color="var(--color-accent)"
             initialPosition={0.08}

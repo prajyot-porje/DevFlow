@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { motion } from "motion/react";
@@ -17,6 +17,7 @@ export default function LandingPage() {
   const { theme } = useTheme();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -62,16 +63,22 @@ export default function LandingPage() {
             </p>
             <button
               onClick={() => {
+                setIsNavigating(true);
                 router.push("/chat");
               }}
-              className={`rounded-full px-8 py-4 font-body font-bold text-base transition-[transform,filter,box-shadow] duration-fast ease-soft active:scale-[0.97] flex items-center justify-center gap-3 mx-auto cursor-pointer ${
+              disabled={isNavigating}
+              className={`rounded-full px-8 py-4 font-body font-bold text-base transition-[transform,filter,box-shadow] duration-fast ease-soft active:scale-[0.97] flex items-center justify-center gap-3 mx-auto cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed ${
                 mounted && theme === "light"
                   ? "bg-[var(--color-bg-page)] text-[var(--color-text-primary)] hover:opacity-90 shadow-[0_4px_14px_rgba(255,255,255,0.2)]"
-                  : "bg-[var(--color-accent)] text-white hover:brightness-110 shadow-[0_0_0_1px_var(--color-accent),0_8px_24px_rgba(14,165,233,0.3)] hover:shadow-[0_0_0_1px_var(--color-accent),0_12px_32px_rgba(14,165,233,0.4)]"
+                  : "bg-[var(--color-accent)] text-white hover:brightness-110 shadow-[0_0_0_1px_var(--color-accent),0_8px_24px_rgba(140,96,243,0.3)] hover:shadow-[0_0_0_1px_var(--color-accent),0_12px_32px_rgba(140,96,243,0.4)]"
               }`}
             >
-              <span>Start Building Free</span>
-              <ArrowRight className="w-5 h-5" />
+              <span>{isNavigating ? "Loading..." : "Start Building Free"}</span>
+              {isNavigating ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <ArrowRight className="w-5 h-5" />
+              )}
             </button>
           </motion.div>
         </section>

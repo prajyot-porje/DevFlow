@@ -123,6 +123,15 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
     }
   }, [isOpen])
 
+  useEffect(() => {
+    if (!isOpen) return;
+    // Find the currently active item by data-active selector
+    const activeEl = document.querySelector('[data-active="true"]');
+    if (activeEl) {
+      activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [selectedIndex, isOpen])
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Beginner":
@@ -189,6 +198,7 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
                   {searchResults.templates.map((template, index) => (
                     <div
                       key={template.id}
+                      data-active={selectedIndex === index}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
                         selectedIndex === index ? "bg-[var(--color-bg-elevated)]" : "hover:bg-[var(--color-bg-hover)]"
                       }`}
@@ -231,6 +241,7 @@ const SpotlightSearch = ({ isOpen, onClose }: SpotlightSearchProps) => {
                   {searchResults.projects.map((project, index) => (
                     <div
                       key={project.id}
+                      data-active={selectedIndex === searchResults.templates.length + index}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
                         selectedIndex === searchResults.templates.length + index ? "bg-[var(--color-bg-elevated)]" : "hover:bg-[var(--color-bg-hover)]"
                       }`}

@@ -27,13 +27,13 @@ export function Hero() {
 
   return (
     <section
-      className="mt-16 pt-24 pb-16 md:pt-32 md:pb-24 px-4 transition-all duration-normal"
+      className="mt-16 pt-12 pb-16 md:pt-16 md:pb-24 px-4 transition-all duration-normal"
       style={
         isDark
           ? {
               backgroundImage: `
-                radial-gradient(ellipse 80% 50% at 0% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 40% at 100% 80%, rgba(35, 53, 77, 0.3) 0%, transparent 50%)
+                radial-gradient(ellipse 80% 50% at 0% 0%, rgba(140, 96, 243, 0.05) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 100% 80%, rgba(42, 38, 57, 0.3) 0%, transparent 50%)
               `,
             }
           : undefined
@@ -110,7 +110,7 @@ export function Hero() {
                   router.push("/chat");
                 }}
                 disabled={isNavigating}
-                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-accent)] text-white font-body font-semibold text-sm transition-[transform,filter] duration-fast ease-soft hover:brightness-110 active:scale-95 cursor-pointer shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.25)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-70 disabled:cursor-not-allowed"
+                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-accent)] text-white font-body font-semibold text-sm transition-[transform,filter] duration-fast ease-soft hover:brightness-110 active:scale-95 cursor-pointer shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(140,96,243,0.25)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <span>{isNavigating ? "Loading..." : "Try it now"}</span>
                 {isNavigating ? (
@@ -188,7 +188,7 @@ export function Hero() {
             whileHover={{ rotate: 0, scale: 1.02, transition: { type: "spring", stiffness: 300, damping: 20 } }}
             className="hidden lg:block origin-center"
           >
-            <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[24px] p-5 shadow-[0_8px_16px_rgba(2,18,47,0.6),0_4px_8px_rgba(2,18,47,0.4)] group">
+            <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[24px] p-5 shadow-[0_8px_16px_rgba(14,12,21,0.6),0_4px_8px_rgba(14,12,21,0.4)] group">
               <CardHeader className="p-0 pb-4">
                 <div className="w-full flex items-center justify-between">
                   <CardTitle className="text-lg font-bold text-[var(--color-text-primary)]">Live Preview</CardTitle>
@@ -202,7 +202,7 @@ export function Hero() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="h-44 bg-linear-to-br from-cream-100 to-cream-200 dark:from-navy-900 dark:to-navy-950 rounded-md flex items-center justify-center mb-4 p-3 border border-foreground/5">
+                <div className="h-44 bg-linear-to-br from-base-100 to-base-200 dark:from-surface-900 dark:to-surface-950 rounded-md flex items-center justify-center mb-4 p-3 border border-foreground/5">
                   <div className="w-full h-full rounded-md bg-background/90 dark:bg-background/80 border border-foreground/5 p-3 flex flex-col shadow-inner group-hover:bg-background transition-colors duration-300">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">

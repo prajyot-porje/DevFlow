@@ -77,13 +77,14 @@ const Sidebar = () => {
       >
         {/* Sidebar Header */}
         <div className="flex items-center gap-3 px-4 py-5 shrink-0 h-[72px]">
-          <div className="w-8 h-8 rounded-xl bg-linear-to-br from-[var(--color-accent)] to-blue-600 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(14,165,233,0.3)]">
+          <div className="w-8 h-8 rounded-xl bg-linear-to-br from-[var(--color-accent)] to-violet-600 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(140,96,243,0.3)]">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           {sidebarOpen && (
             <div className="flex flex-col animate-in fade-in duration-300 min-w-0">
-              <span className="font-heading font-semibold text-[15px] text-[var(--color-text-primary)] leading-tight tracking-tight truncate">
-                DevFlow
+              <span className="font-logo font-semibold text-base leading-tight tracking-normal truncate">
+                <span className="text-[var(--color-text-primary)]">Dev </span>
+                <span className="text-[var(--color-accent)]">Flow</span>
               </span>
               <span className="font-body text-[11px] font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">
                 Code Studio
@@ -161,44 +162,57 @@ const Sidebar = () => {
         </nav>
 
         {/* Recent Projects */}
-        {sidebarOpen && recentProjects.length > 0 && (
+        {sidebarOpen && workspaces !== undefined && (
           <div className="px-3 py-4 mt-auto animate-in fade-in duration-500 border-t border-[var(--color-border-subtle)]">
             <div className="flex items-center justify-between mb-3 px-2">
               <span className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider">
                 Recent Projects
               </span>
             </div>
-            <div className="flex flex-col gap-1">
-              {recentProjects.map((project) => (
+            {recentProjects.length > 0 ? (
+              <div className="flex flex-col gap-1">
+                {recentProjects.map((project) => (
+                  <button
+                    key={project._id}
+                    onClick={() => {
+                      router.push(`/chat/${project._id}`);
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4 text-[var(--color-text-tertiary)] group-hover:text-[var(--color-accent)] shrink-0 transition-colors" />
+                    <span className="font-body text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] truncate transition-colors">
+                      {project.info?.title || "Untitled Project"}
+                    </span>
+                  </button>
+                ))}
+                {workspaces && workspaces.length > 3 && (
+                  <button
+                    onClick={() => {
+                      router.push("/chat/projects");
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors mt-1"
+                  >
+                    <MoreHorizontal className="w-4 h-4 text-[var(--color-text-tertiary)] group-hover:text-[var(--color-text-secondary)] shrink-0 transition-colors" />
+                    <span className="font-body text-sm text-[var(--color-text-tertiary)] group-hover:text-[var(--color-text-secondary)] transition-colors">
+                      View all projects
+                    </span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="px-3 py-4 rounded-xl bg-[var(--color-bg-elevated)]/30 border border-dashed border-[var(--color-border-subtle)] text-center">
+                <Sparkles className="w-4 h-4 text-[var(--color-text-tertiary)] mx-auto mb-1.5" />
+                <p className="text-[11px] font-body font-medium text-[var(--color-text-secondary)]">No projects yet</p>
                 <button
-                  key={project._id}
-                  onClick={() => {
-                    router.push(`/chat/${project._id}`);
-                    if (window.innerWidth < 768) setSidebarOpen(false);
-                  }}
-                  className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors"
+                  onClick={() => router.push("/chat")}
+                  className="text-[10px] font-body text-[var(--color-accent)] hover:text-[var(--color-accent-light)] hover:underline mt-1.5 font-bold cursor-pointer"
                 >
-                  <MessageSquare className="w-4 h-4 text-[var(--color-text-tertiary)] group-hover:text-[var(--color-accent)] shrink-0 transition-colors" />
-                  <span className="font-body text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] truncate transition-colors">
-                    {project.info?.title || "Untitled Project"}
-                  </span>
+                  Create one now
                 </button>
-              ))}
-              {workspaces && workspaces.length > 3 && (
-                <button
-                  onClick={() => {
-                    router.push("/chat/projects");
-                    if (window.innerWidth < 768) setSidebarOpen(false);
-                  }}
-                  className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors mt-1"
-                >
-                  <MoreHorizontal className="w-4 h-4 text-[var(--color-text-tertiary)] group-hover:text-[var(--color-text-secondary)] shrink-0 transition-colors" />
-                  <span className="font-body text-sm text-[var(--color-text-tertiary)] group-hover:text-[var(--color-text-secondary)] transition-colors">
-                    View all projects
-                  </span>
-                </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 

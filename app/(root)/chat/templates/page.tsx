@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Code, Star, Download, Eye, Zap, X, ChevronRight, FileCode, Layers } from "lucide-react"
+import { Code, Star, Download, Eye, Zap, X, ChevronRight, FileCode, Layers, Loader2 } from "lucide-react"
 import { ProjectTemplates } from "@/data/projectTemplates"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useMutation } from "convex/react"
@@ -23,6 +23,7 @@ const categoryGradients: Record<string, string> = {
 const Templates = () => {
   const [selected, setSelected] = useState<TemplateName | null>(null)
   const [filter, setFilter] = useState<string>("all")
+  const [isCreating, setIsCreating] = useState(false)
   const detailsRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -91,42 +92,48 @@ const Templates = () => {
   }
 
   const handleUseTemplate = async (templateName: TemplateName) => {
-    if (!userDetails || !userDetails._id) return
-    const files = getTemplateFiles(templateName)
-    const workspaceID = await CreateWorkspace({
-      user: userDetails._id,
-      message: [
-        {
-          id: Date.now().toString(),
-          type: "user",
-          content: `[TEMPLATE] ${templateName}`,
-          timestamp: Date.now(),
+    if (!userDetails || !userDetails._id || isCreating) return
+    setIsCreating(true)
+    try {
+      const files = getTemplateFiles(templateName)
+      const workspaceID = await CreateWorkspace({
+        user: userDetails._id,
+        message: [
+          {
+            id: Date.now().toString(),
+            type: "user",
+            content: `[TEMPLATE] ${templateName}`,
+            timestamp: Date.now(),
+          },
+        ],
+      })
+      await UpdateFiles({
+        workspaceID,
+        files,
+      })
+      await updateMessages({
+        workspaceID,
+        message: [
+          {
+            id: Date.now().toString(),
+            type: "assistant",
+            content: `You are using the "${templateName}" template. Do you want to edit anything in the template?`,
+            timestamp: Date.now(),
+          },
+        ],
+      })
+      await updateInfo({
+        workspaceID,
+        info: {
+          title: templateName,
+          description: ProjectTemplates[templateName].description || "",
         },
-      ],
-    })
-    await UpdateFiles({
-      workspaceID,
-      files,
-    })
-    await updateMessages({
-      workspaceID,
-      message: [
-        {
-          id: Date.now().toString(),
-          type: "assistant",
-          content: `You are using the "${templateName}" template. Do you want to edit anything in the template?`,
-          timestamp: Date.now(),
-        },
-      ],
-    })
-    await updateInfo({
-      workspaceID,
-      info: {
-        title: templateName,
-        description: ProjectTemplates[templateName].description || "",
-      },
-    })
-    router.push(`/chat/${workspaceID}?fromTemplate=1&templateName=${encodeURIComponent(templateName)}&tab=code`)
+      })
+      router.push(`/chat/${workspaceID}?fromTemplate=1&templateName=${encodeURIComponent(templateName)}&tab=code`)
+    } catch (error) {
+      console.error("Failed to create project from template:", error)
+      setIsCreating(false)
+    }
   }
 
   const filteredTemplates = Object.keys(ProjectTemplates).filter((name) => {
@@ -267,13 +274,18 @@ const Templates = () => {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      className="flex-1 h-9 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white text-[13px] font-medium gap-2 transition-all duration-200"
+                      disabled={isCreating}
+                      className="flex-1 h-9 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white text-[13px] font-medium gap-2 transition-all duration-200 disabled:opacity-50"
                       onClick={e => {
                         e.stopPropagation()
                         handleUseTemplate(templateName)
                       }}
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      {isCreating ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
                       Use Template
                     </Button>
                     <Button
@@ -383,10 +395,15 @@ const Templates = () => {
               {/* CTA */}
               <div className="flex gap-3 mt-8 pt-6 border-t border-[var(--color-border-subtle)]">
                 <Button
-                  className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white gap-2 font-medium h-11 px-6 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
+                  className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white gap-2 font-medium h-11 px-6 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
                   onClick={() => handleUseTemplate(selected)}
+                  disabled={isCreating}
                 >
-                  <Download className="w-4 h-4" />
+                  {isCreating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
                   Start Building with {selected}
                 </Button>
               </div>

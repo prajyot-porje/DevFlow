@@ -15,11 +15,12 @@ export function Footer() {
               href="/"
               className="flex items-center gap-2.5 transition-opacity hover:opacity-80 mb-4"
             >
-              <div className="w-8 h-8 bg-linear-to-br from-navy-950 to-navy-700 dark:from-accent-400 dark:to-accent-500 rounded-xl flex items-center justify-center shadow-sm">
-                <Sparkles className="w-4 h-4 text-white dark:text-navy-950" />
+              <div className="w-8 h-8 bg-linear-to-br from-violet-600 to-violet-700 dark:from-violet-400 dark:to-violet-500 rounded-xl flex items-center justify-center shadow-sm">
+                <Sparkles className="w-4 h-4 text-white dark:text-surface-950" />
               </div>
-              <span className="font-heading font-bold text-xl tracking-tight text-[var(--color-text-primary)]">
-                DevFlow
+              <span className="font-logo font-semibold text-[22px] tracking-normal">
+                <span className="text-[var(--color-text-primary)]">Dev </span>
+                <span className="text-[var(--color-accent)]">Flow</span>
               </span>
             </Link>
             <p className="font-body text-sm text-[var(--color-text-secondary)] leading-[1.6] max-w-[300px] mb-6">

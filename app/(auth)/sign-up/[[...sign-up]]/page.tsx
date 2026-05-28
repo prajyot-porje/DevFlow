@@ -22,9 +22,9 @@ export default function Page() {
         isDark
           ? {
               backgroundImage: `
-                radial-gradient(ellipse 80% 50% at 0% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 40% at 100% 80%, rgba(35, 53, 77, 0.3) 0%, transparent 50%),
-                url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%238BA3C5' fill-opacity='0.06'/%3E%3C/svg%3E")
+                radial-gradient(ellipse 80% 50% at 0% 0%, rgba(140, 96, 243, 0.05) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 100% 80%, rgba(42, 38, 57, 0.3) 0%, transparent 50%),
+                url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%238e8a9c' fill-opacity='0.06'/%3E%3C/svg%3E")
               `,
             }
           : undefined
@@ -57,7 +57,7 @@ export default function Page() {
               socialButtonsBlockButton: 
                 'bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)] rounded-md font-body font-medium text-sm transition-colors duration-100',
               formFieldInput:
-                'bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] focus:border-[var(--color-accent)] rounded-md font-body text-base px-4 py-3 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.2)]',
+                'bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] focus:border-[var(--color-accent)] rounded-md font-body text-base px-4 py-3 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(140,96,243,0.2)]',
               formButtonPrimary:
                 'bg-[var(--color-accent)] hover:brightness-110 font-body font-semibold text-sm rounded-md py-3 tracking-wide transition-all duration-100',
               footerActionLink: 'text-[var(--color-accent)] hover:text-[var(--color-accent-light)]',
