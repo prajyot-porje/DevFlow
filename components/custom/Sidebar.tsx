@@ -12,13 +12,13 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 
 const Sidebar = () => {
-  const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useUser();
@@ -95,14 +95,14 @@ const Sidebar = () => {
 
         {/* New Chat Button */}
         <div className="px-3 pb-4 shrink-0">
-          <button
+          <Link
+            href="/chat"
             className={`flex items-center border transition-all duration-200 ease-out cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
               sidebarOpen
                 ? "w-full py-2 px-3 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-border-strong)] gap-2 group shadow-sm"
                 : "w-9 h-9 mx-auto rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-border-strong)] group shadow-sm flex items-center justify-center"
             }`}
             onClick={() => {
-              router.push("/chat");
               if (window.innerWidth < 768) setSidebarOpen(false);
             }}
           >
@@ -112,7 +112,7 @@ const Sidebar = () => {
                 New Chat
               </span>
             )}
-          </button>
+          </Link>
         </div>
 
         {/* Nav Items */}
@@ -121,8 +121,9 @@ const Sidebar = () => {
             const active = item.active;
             
             return (
-              <button
+              <Link
                 key={index}
+                href={item.route}
                 title={!sidebarOpen ? item.label : undefined}
                 className={`flex items-center transition-all duration-200 ease-out cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] group ${
                   sidebarOpen
@@ -138,10 +139,7 @@ const Sidebar = () => {
                       }`
                 }`}
                 onClick={() => {
-                  if (item.route) {
-                    router.push(item.route);
-                    if (window.innerWidth < 768) setSidebarOpen(false);
-                  }
+                  if (window.innerWidth < 768) setSidebarOpen(false);
                 }}
               >
                 <item.icon
@@ -156,7 +154,7 @@ const Sidebar = () => {
                     {item.label}
                   </span>
                 )}
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -172,45 +170,45 @@ const Sidebar = () => {
             {recentProjects.length > 0 ? (
               <div className="flex flex-col gap-1">
                 {recentProjects.map((project) => (
-                  <button
+                  <Link
                     key={project._id}
+                    href={`/chat/${project._id}`}
                     onClick={() => {
-                      router.push(`/chat/${project._id}`);
                       if (window.innerWidth < 768) setSidebarOpen(false);
                     }}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors w-full"
                   >
                     <MessageSquare className="w-4 h-4 text-[var(--color-text-tertiary)] group-hover:text-[var(--color-accent)] shrink-0 transition-colors" />
                     <span className="font-body text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] truncate transition-colors">
                       {project.info?.title || "Untitled Project"}
                     </span>
-                  </button>
+                  </Link>
                 ))}
                 {workspaces && workspaces.length > 3 && (
-                  <button
+                  <Link
+                    href="/chat/projects"
                     onClick={() => {
-                      router.push("/chat/projects");
                       if (window.innerWidth < 768) setSidebarOpen(false);
                     }}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors mt-1"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[var(--color-bg-elevated)] text-left group transition-colors mt-1 w-full"
                   >
                     <MoreHorizontal className="w-4 h-4 text-[var(--color-text-tertiary)] group-hover:text-[var(--color-text-secondary)] shrink-0 transition-colors" />
                     <span className="font-body text-sm text-[var(--color-text-tertiary)] group-hover:text-[var(--color-text-secondary)] transition-colors">
                       View all projects
                     </span>
-                  </button>
+                  </Link>
                 )}
               </div>
             ) : (
               <div className="px-3 py-4 rounded-xl bg-[var(--color-bg-elevated)]/30 border border-dashed border-[var(--color-border-subtle)] text-center">
                 <Sparkles className="w-4 h-4 text-[var(--color-text-tertiary)] mx-auto mb-1.5" />
                 <p className="text-[11px] font-body font-medium text-[var(--color-text-secondary)]">No projects yet</p>
-                <button
-                  onClick={() => router.push("/chat")}
+                <Link
+                  href="/chat"
                   className="text-[10px] font-body text-[var(--color-accent)] hover:text-[var(--color-accent-light)] hover:underline mt-1.5 font-bold cursor-pointer"
                 >
                   Create one now
-                </button>
+                </Link>
               </div>
             )}
           </div>

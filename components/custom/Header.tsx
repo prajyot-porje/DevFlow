@@ -91,10 +91,15 @@ const Header = ({ showHistoryButton = false, onToggleHistory }: { showHistoryBut
           {/* Search Button (Desktop) */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] font-body text-xs text-[var(--color-text-tertiary)] hover:border-[var(--color-border-strong)] transition-colors duration-fast ease-soft cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            className="hidden sm:flex items-center justify-between gap-2 w-48 md:w-60 h-9 px-3.5 rounded-xl bg-[var(--color-bg-elevated)]/50 border border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-hover)] hover:border-[var(--color-border-default)] font-body text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] shadow-sm"
           >
-            <Search className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span>Search <span className="hidden md:inline">{typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl+K'}</span></span>
+            <div className="flex items-center gap-2 min-w-0">
+              <Search className="w-3.5 h-3.5 text-[var(--color-text-tertiary)] shrink-0" />
+              <span className="truncate text-left text-[13px]">Search...</span>
+            </div>
+            <kbd className="hidden md:inline-flex items-center h-5 px-1.5 bg-[var(--color-bg-inset)]/50 border border-[var(--color-border-subtle)] text-[10px] text-[var(--color-text-tertiary)] font-mono font-medium rounded-md tracking-widest shrink-0 select-none shadow-xs">
+              {typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || "") ? '⌘K' : 'Ctrl+K'}
+            </kbd>
           </button>
 
           {/* Search Button (Mobile) */}

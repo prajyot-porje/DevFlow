@@ -28,56 +28,32 @@ const MODEL_OPTIONS = [
   {
     label: "Auto Router",
     provider: "OpenRouter",
-    value: "openrouter/free",
+    value: "auto",
     description: "Automatically routes to the best available free model",
     badge: "Recommended",
     icon: Sparkles,
   },
   {
-    label: "Qwen 2.5 72B",
-    provider: "Qwen",
-    value: "qwen/qwen-2.5-72b-instruct:free",
-    description: "Strong coding and instruction-following",
+    label: "Poolside Laguna-M.1 (Free)",
+    provider: "Poolside",
+    value: "poolside/laguna-m.1:free",
+    description: "High performance code generation",
+    badge: "Recommended",
+    icon: Zap,
+  },
+  {
+    label: "Nvidia Nemotron-3 Super 120B (Free)",
+    provider: "Nvidia",
+    value: "nvidia/nemotron-3-super-120b-a12b:free",
+    description: "Large model, excellent for instructions",
     badge: "Free",
     icon: Zap,
   },
   {
-    label: "Llama 3.3 70B",
-    provider: "Meta",
-    value: "meta-llama/llama-3.3-70b-instruct:free",
-    description: "Large model, excellent for general instructions",
-    badge: "Free",
-    icon: Zap,
-  },
-  {
-    label: "Gemma 4 31B",
-    provider: "Google",
-    value: "google/gemma-4-31b-it:free",
-    description: "High-performance instruction-tuned model",
-    badge: "Free",
-    icon: Zap,
-  },
-  {
-    label: "GLM 4.5 Air",
-    provider: "Z-AI",
-    value: "z-ai/glm-4.5-air:free",
-    description: "Extremely fast, high-quality free model",
-    badge: "Free",
-    icon: Zap,
-  },
-  {
-    label: "GPT-OSS 120B",
-    provider: "OpenAI",
-    value: "openai/gpt-oss-120b:free",
-    description: "Very large open weights model",
-    badge: "Free",
-    icon: Zap,
-  },
-  {
-    label: "Gemma 4 26B A4B",
-    provider: "Google",
-    value: "google/gemma-4-26b-a4b-it:free",
-    description: "Instruction-tuned 26B model",
+    label: "Deepseek v4 Flash (Free)",
+    provider: "Deepseek",
+    value: "deepseek/deepseek-v4-flash:free",
+    description: "Fast and efficient generation",
     badge: "Free",
     icon: Zap,
   },
@@ -197,8 +173,8 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
-              <div className="p-6 flex justify-center min-h-[600px] w-full relative">
-                {!isLoaded ? (
+              {!isLoaded ? (
+                <div className="p-6 flex justify-center w-full">
                   <div className="w-full max-w-[700px] flex flex-col gap-6 animate-pulse p-4">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)]" />
@@ -213,10 +189,21 @@ const Settings = () => {
                       <div className="h-44 bg-[var(--color-bg-elevated)] rounded-md w-full" />
                     </div>
                   </div>
-                ) : (
-                  <UserProfile routing="hash" />
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="p-0 flex justify-center min-h-[600px] w-full relative">
+                  <UserProfile
+                    routing="hash"
+                    appearance={{
+                      elements: {
+                        card: "shadow-none border-none bg-transparent w-full",
+                        cardBox: "shadow-none border-none w-full max-w-none",
+                        rootBox: "w-full max-w-none"
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

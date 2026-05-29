@@ -57,6 +57,42 @@ export function WebContainerPreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files, responseReceived, webContainer]);
 
+  // Ping the server to check if it's responsive and load the iframe early
+  useEffect(() => {
+    if (!Url || loadingState !== "loading") return;
+
+    let active = true;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    const checkServerReady = async () => {
+      try {
+        await fetch(Url, { mode: "no-cors", cache: "no-store" });
+        if (active) {
+          setLoadingState("loaded");
+        }
+      } catch {
+        if (active) {
+          timerId = setTimeout(checkServerReady, 500);
+        }
+      }
+    };
+
+    checkServerReady();
+
+    // Safety fallback: if pinging fails or page takes too long to load, force-display it after 2.5 seconds
+    const fallbackId = setTimeout(() => {
+      if (active) {
+        setLoadingState("loaded");
+      }
+    }, 2500);
+
+    return () => {
+      active = false;
+      if (timerId) clearTimeout(timerId);
+      clearTimeout(fallbackId);
+    };
+  }, [Url, loadingState]);
+
   async function startServer() {
     if (!webContainer) return;
     setIsRunning(true);
@@ -81,6 +117,15 @@ export function WebContainerPreview({
     setInstallationPhase("starting");
     const server = await webContainer.spawn("npm", ["run", "dev"]);
     setServerProcess(server);
+
+    server.output.pipeTo(
+      new WritableStream({
+        write(data) {
+          console.log("[Vite Dev Server Output]", data);
+        },
+      })
+    );
+
     webContainer.on("server-ready", (port, url) => {
       setUrl(url);
       setport(port.toString());

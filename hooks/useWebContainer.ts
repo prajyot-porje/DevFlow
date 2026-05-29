@@ -88,7 +88,30 @@ export const useWebContainer = () => {
     async (files: InputFileStructure) => {
       if (!webContainer || Object.keys(files).length === 0) return;
       try {
-        const converted = convertToWebContainerFileSystem(files);
+        const optimizedFiles = { ...files };
+
+        const getFile = (name: string) => optimizedFiles[name] || optimizedFiles[name.slice(1)];
+        const setFile = (name: string, content: string) => {
+          if (optimizedFiles[name]) optimizedFiles[name] = { code: content };
+          else if (optimizedFiles[name.slice(1)]) optimizedFiles[name.slice(1)] = { code: content };
+        };
+
+        // Optimize tailwind.config files to restrict content scanning to /src.
+        // This prevents Tailwind from traversing the massive node_modules folder inside the WebAssembly filesystem.
+        const optimizeTailwindConfig = (filename: string) => {
+          const file = getFile(filename);
+          if (file) {
+            let code = file.code;
+            code = code.replace(/content\s*:\s*\[[\s\S]*?\]/g, 'content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"]');
+            setFile(filename, code);
+          }
+        };
+
+        optimizeTailwindConfig("/tailwind.config.js");
+        optimizeTailwindConfig("/tailwind.config.ts");
+        optimizeTailwindConfig("/tailwind.config.mjs");
+
+        const converted = convertToWebContainerFileSystem(optimizedFiles);
         await webContainer.mount(converted);
       } catch (err) {
         console.error("Failed to update WebContainer files:", err);

@@ -15,7 +15,7 @@ export async function callOpenRouter(params: {
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
       reject(new Error("Timeout"));
-    }, 8000);
+    }, 30000);
   });
 
   const fetchPromise = fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -77,6 +77,7 @@ export async function callBuilderWithFallback(
     { model: "poolside/laguna-m.1:free", maxTokens: 32000 },
     { model: "nvidia/nemotron-3-super-120b-a12b:free", maxTokens: 32000 },
     { model: "deepseek/deepseek-v4-flash:free", maxTokens: 32000 },
+    { model: "openrouter/free", maxTokens: 32000 },
   ];
 
   let builderQueue = [...DEFAULT_BUILDER_MODELS];

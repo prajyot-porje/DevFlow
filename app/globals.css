@@ -293,3 +293,53 @@ html[data-theme="dark"] body,
   overflow: hidden !important;
   opacity: 0 !important;
 }
+
+/* Custom scrollbars for textareas to prevent overlapping rounded edges */
+.custom-scrollbar-chat::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar-chat::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 12px;
+  margin-bottom: 50px;
+}
+.custom-scrollbar-chat::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.custom-scrollbar-chat::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.custom-scrollbar-chat {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.custom-scrollbar-workspace::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar-workspace::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 6px;
+  margin-bottom: 44px;
+}
+.custom-scrollbar-workspace::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.custom-scrollbar-workspace::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.custom-scrollbar-workspace {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+

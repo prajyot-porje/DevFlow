@@ -2,13 +2,24 @@
 import { useEffect, useState } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar } from "@/components/ui/avatar"
 import ReactMarkdown from "react-markdown"
-import { Send, Code, Eye, Sparkles, Loader2, AlertTriangle } from "lucide-react"
+import { 
+  Send, Code, Eye, Sparkles, Loader2, AlertTriangle, FileText, X,
+  FolderOpen, CheckCircle2, XCircle, Compass, Terminal, FileCode, Check, Copy, ChevronDown
+} from "lucide-react"
+import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
@@ -49,6 +60,330 @@ function TimeClient({ date }: { date: number }) {
 }
 
 // ---------------------------------------------------------------------------
+// Assistant Message Parsing & Beautiful Visual Card Rendering
+// ---------------------------------------------------------------------------
+
+interface ParsedAssistantMessage {
+  isGenerationMessage: boolean;
+  status: "planning" | "generating" | "success" | "error";
+  projectTitle: string;
+  description: string;
+  errorMessage: string;
+  currentTask: string;
+  files: { path: string; status: "pending" | "generating" | "success" | "failed" }[];
+}
+
+function parseAssistantMessage(content: string): ParsedAssistantMessage {
+  const result: ParsedAssistantMessage = {
+    isGenerationMessage: false,
+    status: "planning",
+    projectTitle: "",
+    description: "",
+    errorMessage: "",
+    currentTask: "",
+    files: [],
+  };
+
+  const lower = content.toLowerCase();
+  const isPlanning = lower.includes("initializing planner") || lower.includes("creating plan");
+  const isGenerating = lower.includes("status:") || lower.includes("generating ") || lower.includes("planning complete") || lower.includes("project:") || lower.includes("failed to generate ");
+  const isSuccess = lower.includes("successfully generated your project");
+  const isError = lower.includes("error during generation") || lower.includes("failed to generate response");
+
+  if (!isPlanning && !isGenerating && !isSuccess && !isError) {
+    return result;
+  }
+
+  result.isGenerationMessage = true;
+
+  // Extract Project Title
+  const projectMatch = content.match(/\*\*Project:\*\*\s*(.*)/i) || content.match(/Project:\s*(.*)/i);
+  if (projectMatch) {
+    result.projectTitle = projectMatch[1].split("\n")[0].trim();
+  }
+  const successMatch = content.match(/generated your project:\s*\*\*(.*?)\*\*/i);
+  if (successMatch) {
+    result.projectTitle = successMatch[1].trim();
+  }
+
+  // Set status
+  if (isError) {
+    result.status = "error";
+  } else if (isSuccess) {
+    result.status = "success";
+  } else if (isGenerating) {
+    result.status = "generating";
+  } else {
+    result.status = "planning";
+  }
+
+  // Extract description
+  const descMatch = content.match(/\*\*Description:\*\*\s*\n?([\s\S]*?)(?=\n\n\*\*Files|$)/i) || content.match(/Description:\s*\n?([\s\S]*?)(?=\n\n\*\*Files|$)/i);
+  if (descMatch) {
+    result.description = descMatch[1].trim();
+  }
+
+  // Extract error message
+  const errMatch = content.match(/⚠️\s*\*\*Error.*?\*\*:\s*(.*)/i) || content.match(/Failed to generate response:\s*(.*)/i);
+  if (errMatch) {
+    result.errorMessage = errMatch[1].trim();
+  }
+
+  // Extract current task
+  const statusMatch = content.match(/\*\*Status:\*\*\s*(.*)/i);
+  if (statusMatch) {
+    result.currentTask = statusMatch[1].trim();
+  } else {
+    const lines = content.split("\n");
+    const taskLine = lines.find(line => 
+      line.startsWith("Generating ") || 
+      line.startsWith("Failed to generate ") || 
+      line.startsWith("Successfully generated ") || 
+      line.startsWith("Syntax error ") ||
+      line.startsWith("Planning complete")
+    );
+    if (taskLine) {
+      result.currentTask = taskLine.trim();
+    }
+  }
+
+  // Extract Files List
+  const lines = content.split("\n");
+  lines.forEach((line) => {
+    const checkboxMatch = line.match(/^-\s*\[(.*?)\]\s*`?(.*?)`?$/);
+    if (checkboxMatch) {
+      const char = checkboxMatch[1].trim();
+      const path = checkboxMatch[2].trim();
+      let fileStatus: "pending" | "generating" | "success" | "failed" = "pending";
+      if (char === "x") fileStatus = "success";
+      else if (char === "/") fileStatus = "generating";
+      else if (char === "!") fileStatus = "failed";
+      result.files.push({ path, status: fileStatus });
+    } else {
+      const bulletMatch = line.match(/^-\s*`?(.*?)`?$/);
+      if (bulletMatch) {
+        const path = bulletMatch[1].trim();
+        if (path.startsWith("**") && path.endsWith("**")) return;
+        if (path.toLowerCase().startsWith("files")) return;
+        result.files.push({ path, status: result.status === "success" ? "success" : "pending" });
+      }
+    }
+  });
+
+  return result;
+}
+
+function AssistantMessageCard({ content }: { content: string }) {
+  const parsed = parseAssistantMessage(content);
+  const [copiedFile, setCopiedFile] = useState<string | null>(null);
+
+  if (!parsed.isGenerationMessage) {
+    return <ReactMarkdown>{content}</ReactMarkdown>;
+  }
+
+  const handleCopy = (path: string) => {
+    navigator.clipboard.writeText(path);
+    setCopiedFile(path);
+    setTimeout(() => setCopiedFile(null), 2000);
+  };
+
+  // 1. Planning State
+  if (parsed.status === "planning") {
+    return (
+      <div className="flex flex-col gap-4 p-5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl shadow-sm animate-pulse w-full">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center text-[var(--color-accent)] shrink-0">
+            <Compass className="w-5.5 h-5.5 animate-spin" style={{ animationDuration: '3s' }} />
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Initializing Build Pipeline</h4>
+            <p className="text-xs text-[var(--color-text-tertiary)]">Creating blueprint and architecture...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Error State
+  if (parsed.status === "error") {
+    return (
+      <div className="flex flex-col gap-4 p-5 bg-[var(--color-bg-surface)] border border-rose-500/20 rounded-2xl shadow-sm w-full animate-in fade-in duration-300">
+        <div className="flex items-center gap-3 border-b border-rose-500/10 pb-3.5">
+          <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
+            <Terminal className="w-5.5 h-5.5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-rose-500">Generation Pipeline Interrupted</h4>
+            <p className="text-xs text-[var(--color-text-tertiary)]">The builder pipeline encountered an unexpected issue</p>
+          </div>
+        </div>
+        <div className="p-4 bg-rose-500/5 border border-rose-500/10 rounded-xl text-[13px] md:text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          <p className="font-semibold text-[var(--color-text-primary)] mb-1">We couldn&apos;t complete your request</p>
+          We are currently experiencing unusually high traffic, or the model is temporarily down. Please try again in a few moments, select a different model from the dropdown below, or come back later.
+        </div>
+        <details className="group border border-[var(--color-border-subtle)] rounded-xl overflow-hidden bg-[var(--color-bg-elevated)]/10">
+          <summary className="flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-hover)] cursor-pointer select-none">
+            <span>Show technical details</span>
+            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="px-4 py-3.5 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-page)] font-mono text-xs text-rose-400 leading-relaxed whitespace-pre-wrap">
+            {parsed.errorMessage || content}
+          </div>
+        </details>
+      </div>
+    );
+  }
+
+  // Calculate stats for generating & success
+  const totalFiles = parsed.files.length;
+  const successFiles = parsed.files.filter(f => f.status === "success").length;
+  const failedFiles = parsed.files.filter(f => f.status === "failed").length;
+  const progressPct = totalFiles > 0 ? ((successFiles + failedFiles) / totalFiles) * 100 : 0;
+  const activeFiles = parsed.files.filter(f => f.status !== "pending");
+
+  // 3. Generating/Building State
+  if (parsed.status === "generating") {
+    return (
+      <div className="flex flex-col gap-5 p-5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl shadow-sm w-full">
+        <div className="flex items-start justify-between border-b border-[var(--color-border-subtle)] pb-3.5 gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center text-[var(--color-accent)] shrink-0">
+              <Loader2 className="w-5.5 h-5.5 animate-spin" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded-full">Building Assets</span>
+              <h4 className="text-sm font-bold text-[var(--color-text-primary)] mt-1 truncate">
+                {parsed.projectTitle || "DevFlow Project"}
+              </h4>
+            </div>
+          </div>
+          <div className="text-xs font-semibold text-[var(--color-text-secondary)] shrink-0">
+            {successFiles}/{totalFiles} files
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <div className="h-1.5 w-full bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-linear-to-r from-[var(--color-accent)] to-[var(--color-accent-light)] transition-all duration-500 ease-out rounded-full" 
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <p className="text-xs font-medium text-[var(--color-text-secondary)] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-ping shrink-0" />
+            <span className="animate-pulse truncate">{parsed.currentTask || "Generating files..."}</span>
+          </p>
+        </div>
+
+        {/* Files Checklist */}
+        {activeFiles.length > 0 && (
+          <div className="border border-[var(--color-border-subtle)] rounded-xl overflow-hidden bg-[var(--color-bg-elevated)]/20 animate-in fade-in duration-300">
+            <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border-subtle)] custom-scrollbar-workspace">
+              {activeFiles.map((file, idx) => {
+                const displayPath = file.path.startsWith("/") ? file.path.slice(1) : file.path;
+                return (
+                  <div key={idx} className="flex items-center justify-between px-3.5 py-2.5 text-[13px] hover:bg-[var(--color-bg-elevated)]/40 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {file.status === "success" && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Generated
+                        </span>
+                      )}
+                      {file.status === "generating" && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider uppercase bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 shrink-0 animate-pulse">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Generating
+                        </span>
+                      )}
+                      {file.status === "failed" && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 shrink-0">
+                          <XCircle className="w-3 h-3" />
+                          Failed
+                        </span>
+                      )}
+                      <span className={`font-mono truncate ${
+                        file.status === "success" 
+                          ? "text-[var(--color-text-primary)]" 
+                          : file.status === "failed"
+                          ? "text-rose-400 line-through"
+                          : "text-[var(--color-text-secondary)] font-semibold"
+                      }`}>
+                        {displayPath}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 4. Success State
+  if (parsed.status === "success") {
+    return (
+      <div className="flex flex-col gap-5 p-5 bg-[var(--color-bg-surface)] border border-emerald-500/20 rounded-2xl shadow-sm w-full">
+        <div className="flex items-start justify-between border-b border-emerald-500/10 pb-3.5 gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+              <FolderOpen className="w-5.5 h-5.5" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">Success</span>
+              <h4 className="text-sm font-bold text-[var(--color-text-primary)] mt-1 truncate">
+                {parsed.projectTitle || "DevFlow Project"}
+              </h4>
+            </div>
+          </div>
+        </div>
+
+        {parsed.description && (
+          <p className="text-[13px] md:text-[14px] text-[var(--color-text-secondary)] leading-relaxed italic bg-[var(--color-bg-elevated)]/30 p-3.5 rounded-xl border border-[var(--color-border-subtle)]">
+            {parsed.description}
+          </p>
+        )}
+
+        {/* Files Grid */}
+        {totalFiles > 0 && (
+          <div className="space-y-2.5">
+            <h5 className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">Assets Created ({totalFiles})</h5>
+            <div className="border border-[var(--color-border-subtle)] rounded-xl overflow-hidden bg-[var(--color-bg-elevated)]/20">
+              <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border-subtle)] custom-scrollbar-workspace">
+                {parsed.files.map((file, idx) => {
+                  const displayPath = file.path.startsWith("/") ? file.path.slice(1) : file.path;
+                  return (
+                    <div key={idx} className="flex items-center justify-between px-3.5 py-2.5 text-[13px] hover:bg-[var(--color-bg-elevated)]/40 transition-colors group">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileCode className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
+                        <span className="font-mono truncate text-[var(--color-text-primary)]">
+                          {displayPath}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleCopy(displayPath)}
+                        className="p-1 rounded-lg text-[var(--color-text-tertiary)] opacity-0 group-hover:opacity-100 hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)] transition-all cursor-pointer shrink-0"
+                      >
+                        {copiedFile === displayPath ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 animate-in fade-in zoom-in duration-200" />}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return <ReactMarkdown>{content}</ReactMarkdown>;
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -63,6 +398,39 @@ export default function ChatWorkspacePage() {
   const user = useUser()
 
   const [historyOpen, setHistoryOpen] = useState(false)
+
+  const [pastedFile, setPastedFile] = useState<{ name: string; content: string } | null>(null)
+  const [viewFileDialogOpen, setViewFileDialogOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData("text")
+    if (pastedText.length > 500) {
+      e.preventDefault()
+      setPastedFile({
+        name: "Pasted Prompt",
+        content: pastedText,
+      })
+      toast.success("Large prompt pasted as attachment")
+    }
+  }
+
+  const handleWorkspaceGenerate = (input: string) => {
+    const finalInput = pastedFile
+      ? (input.trim() ? `${input}\n\nAttachment:\n${pastedFile.content}` : pastedFile.content)
+      : input;
+    OnGenerate(finalInput)
+    setPastedFile(null)
+  }
 
   // ── Editor / file / container state ───────────────────────────────────────
   const {
@@ -102,6 +470,8 @@ export default function ChatWorkspacePage() {
     markHistoryLoaded,
     selectedModel,
     setSelectedModel,
+    recommendations,
+    setRecommendations,
   } = useAIChat({
     workspaceId: id,
     files,
@@ -118,6 +488,18 @@ export default function ChatWorkspacePage() {
     "deepseek/deepseek-v4-flash:free": "online",
   });
   const [offlineAlertOpen, setOfflineAlertOpen] = useState(false);
+
+  const isValidRecommendation = (recs: unknown): recs is string[] => {
+    return (
+      Array.isArray(recs) &&
+      recs.length >= 2 &&
+      recs.every((r) => typeof r === "string" && r.trim().length > 0 && r.length <= 60)
+    );
+  };
+
+  const displayRecommendations = isValidRecommendation(recommendations)
+    ? recommendations.slice(0, 2)
+    : existingProjectPrompts.slice(0, 2);
 
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -148,6 +530,9 @@ export default function ChatWorkspacePage() {
     const bootstrap = async () => {
       const result = await loadWorkspace()
 
+      if (result?.info?.recommendations) {
+        setRecommendations(result.info.recommendations)
+      }
       if (result?.info?.title) {
         // title is managed by Convex now
       }
@@ -249,71 +634,135 @@ export default function ChatWorkspacePage() {
                       <ChatTabSkeleton />
                     ) : (
                       <>
-                        <ScrollArea className="flex-1 pr-2 md:pr-4 hide-scrollbar">
+                        <ScrollArea className="flex-1 hide-scrollbar">
                           <div className="space-y-4 md:space-y-6">
                             {messages.map((msg) => (
                               <div
                                 key={msg.id}
-                                className={`flex gap-3 md:gap-4 animate-in slide-in-from-bottom-2 duration-500 ${
-                                  msg.type === "user" ? "justify-end" : ""
-                                }`}
+                                className="w-full max-w-[760px] mx-auto relative my-4"
                               >
-                                {msg.type === "assistant" && (
-                                  <Avatar className="w-7 h-7 md:w-8 md:h-8 mt-1 shrink-0">
-                                    <div className="w-full h-full bg-linear-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center">
-                                      <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
+                                <div className={`flex gap-3 md:gap-0 items-start w-full relative ${
+                                  msg.type === "user" ? "justify-end" : "justify-start"
+                                }`}>
+                                  {/* Mobile Assistant Avatar */}
+                                  {msg.type === "assistant" && (
+                                    <div className="block md:hidden shrink-0">
+                                      <Avatar className="w-7 h-7 mt-1">
+                                        <div className="w-full h-full bg-linear-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center rounded-full">
+                                          <Sparkles className="w-3.5 h-3.5 text-white" />
+                                        </div>
+                                      </Avatar>
                                     </div>
-                                  </Avatar>
-                                )}
+                                  )}
 
-                                <div className={`max-w-[85%] sm:max-w-[80%] md:max-w-[70%] ${msg.type === "user" ? "order-first" : ""}`}>
-                                  <div
-                                    className={`rounded-2xl px-4 py-3 shadow-sm border ${
-                                      msg.type === "user"
-                                        ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 text-[var(--color-text-primary)] rounded-tr-sm ml-auto"
-                                        : "bg-[var(--color-bg-surface)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] rounded-tl-sm"
-                                    }`}
-                                  >
-                                    <div className="text-[13px] md:text-[14px] leading-relaxed break-words markdown-body">
-                                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                  {/* Desktop Assistant Avatar (Absolutely positioned on the left, outside the 760px boundary) */}
+                                  {msg.type === "assistant" && (
+                                    <div className="hidden md:block absolute right-full mr-4 top-1 shrink-0">
+                                      <Avatar className="w-8 h-8">
+                                        <div className="w-full h-full bg-linear-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center rounded-full">
+                                          <Sparkles className="w-4 h-4 text-white" />
+                                        </div>
+                                      </Avatar>
                                     </div>
+                                  )}
+
+                                  {/* Bubble content */}
+                                  <div className={`max-w-[85%] sm:max-w-[80%] md:max-w-[75%] ${msg.type === "user" ? "ml-auto animate-in fade-in slide-in-from-bottom-2 duration-300" : "w-full animate-in fade-in duration-300"}`}>
+                                    <div
+                                      className={
+                                        msg.type === "user"
+                                          ? "rounded-2xl px-4 py-3 shadow-sm border bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 text-[var(--color-text-primary)] rounded-tr-sm"
+                                          : !parseAssistantMessage(msg.content).isGenerationMessage
+                                          ? "rounded-2xl px-4 py-3 shadow-sm border bg-[var(--color-bg-surface)] border-[var(--color-border-subtle)] text-[var(--color-text-primary)] rounded-tl-sm"
+                                          : ""
+                                      }
+                                    >
+                                      <div className={
+                                        msg.type === "user" || (msg.type === "assistant" && !parseAssistantMessage(msg.content).isGenerationMessage)
+                                          ? "text-[13px] md:text-[14px] leading-relaxed break-words markdown-body" 
+                                          : "w-full"
+                                      }>
+                                        {msg.type === "assistant" ? (
+                                          <AssistantMessageCard content={msg.content} />
+                                        ) : (
+                                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <p className={`text-[10px] md:text-[11px] font-medium text-[var(--color-text-tertiary)] mt-1.5 md:mt-2 px-1 ${
+                                      msg.type === "user" ? "text-right" : "text-left"
+                                    }`}>
+                                      <TimeClient date={msg.timestamp} />
+                                    </p>
                                   </div>
-                                  <p className={`text-[10px] md:text-[11px] font-medium text-[var(--color-text-tertiary)] mt-1.5 md:mt-2 px-1 ${msg.type === "user" ? "text-right" : "text-left"}`}>
-                                    <TimeClient date={msg.timestamp} />
-                                  </p>
-                                </div>
 
-                                {msg.type === "user" && (
-                                  <Avatar className="w-7 h-7 md:w-8 md:h-8 mt-1 shrink-0 ring-2 ring-[var(--color-bg-page)] shadow-sm">
-                                    <SignedIn>
-                                      <Image
-                                        src={user.user?.imageUrl || "/placeholder.svg"}
-                                        alt={user.user?.firstName || "User"}
-                                        width={32}
-                                        height={32}
-                                        className="rounded-full object-cover w-7 h-7 md:w-8 md:h-8"
-                                      />
-                                    </SignedIn>
-                                  </Avatar>
-                                )}
+                                  {/* Mobile User Avatar */}
+                                  {msg.type === "user" && (
+                                    <div className="block md:hidden shrink-0">
+                                      <Avatar className="w-7 h-7 mt-1 ring-2 ring-[var(--color-bg-page)] shadow-sm">
+                                        <SignedIn>
+                                          <Image
+                                            src={user.user?.imageUrl || "/placeholder.svg"}
+                                            alt={user.user?.firstName || "User"}
+                                            width={28}
+                                            height={28}
+                                            className="rounded-full object-cover w-7 h-7"
+                                          />
+                                        </SignedIn>
+                                      </Avatar>
+                                    </div>
+                                  )}
+
+                                  {/* Desktop User Avatar (Absolutely positioned on the right, outside the 760px boundary) */}
+                                  {msg.type === "user" && (
+                                    <div className="hidden md:block absolute left-full ml-4 top-1 shrink-0">
+                                      <Avatar className="w-8 h-8 ring-2 ring-[var(--color-bg-page)] shadow-sm">
+                                        <SignedIn>
+                                          <Image
+                                            src={user.user?.imageUrl || "/placeholder.svg"}
+                                            alt={user.user?.firstName || "User"}
+                                            width={32}
+                                            height={32}
+                                            className="rounded-full object-cover w-8 h-8"
+                                          />
+                                        </SignedIn>
+                                      </Avatar>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ))}
 
-                            {isLoading && (
-                              <div className="flex gap-3 md:gap-4 animate-in slide-in-from-bottom-2 duration-500">
-                                <Avatar className="w-7 h-7 md:w-8 md:h-8 mt-1 shrink-0 shadow-sm">
-                                  <div className="w-full h-full bg-linear-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center rounded-full">
-                                    <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-white animate-pulse" />
+                            {isLoading && (messages.length === 0 || messages[messages.length - 1].type !== "assistant") && (
+                              <div className="w-full max-w-[760px] mx-auto relative my-4">
+                                <div className="flex gap-3 md:gap-0 items-start w-full relative justify-start">
+                                  {/* Mobile Avatar */}
+                                  <div className="block md:hidden shrink-0">
+                                    <Avatar className="w-7 h-7 mt-1 shadow-sm">
+                                      <div className="w-full h-full bg-linear-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center rounded-full">
+                                        <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+                                      </div>
+                                    </Avatar>
                                   </div>
-                                </Avatar>
-                                <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl rounded-tl-sm px-4 py-3.5 shadow-sm">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex gap-1.5">
-                                      <div className="w-1.5 h-1.5 bg-[var(--color-accent)]/60 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" style={{ animationDelay: "-0.32s" }} />
-                                      <div className="w-1.5 h-1.5 bg-[var(--color-accent)]/80 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" style={{ animationDelay: "-0.16s" }} />
-                                      <div className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" />
+
+                                  {/* Desktop Avatar (Absolute outside) */}
+                                  <div className="hidden md:block absolute right-full mr-4 top-1 shrink-0">
+                                    <Avatar className="w-8 h-8 shadow-sm">
+                                      <div className="w-full h-full bg-linear-to-br from-[var(--color-accent)] to-[var(--color-accent-light)] flex items-center justify-center rounded-full">
+                                        <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                                      </div>
+                                    </Avatar>
+                                  </div>
+
+                                  <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl rounded-tl-sm px-4 py-3.5 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex gap-1.5">
+                                        <div className="w-1.5 h-1.5 bg-[var(--color-accent)]/60 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" style={{ animationDelay: "-0.32s" }} />
+                                        <div className="w-1.5 h-1.5 bg-[var(--color-accent)]/80 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" style={{ animationDelay: "-0.16s" }} />
+                                        <div className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" />
+                                      </div>
+                                      <span className="text-[13px] font-medium text-[var(--color-text-secondary)] animate-pulse">Thinking...</span>
                                     </div>
-                                    <span className="text-[13px] font-medium text-[var(--color-text-secondary)] animate-pulse">Thinking...</span>
                                   </div>
                                 </div>
                               </div>
@@ -323,40 +772,81 @@ export default function ChatWorkspacePage() {
                         </ScrollArea>
 
                         {/* Input Area */}
-                        <div className="mt-3 md:mt-4 space-y-3 md:space-y-4 pt-2 pb-4 md:pb-6">
-                          <div className="flex gap-1.5 md:gap-2 flex-wrap">
-                            {existingProjectPrompts.slice(0, 3).map((suggestion, index) => (
-                              <Button
-                                key={index}
-                                variant="outline"
-                                size="sm"
-                                className="text-[10px] md:text-xs hover:bg-[var(--color-bg-hover)] hover:scale-105 transition-all bg-[var(--color-bg-surface)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] h-7 md:h-8 px-2 md:px-3"
-                                onClick={() => setUserInput(suggestion)}
-                              >
-                                {suggestion}
-                              </Button>
-                            ))}
-                          </div>
+                        <div className="max-w-[760px] w-full mx-auto mt-3 md:mt-4 space-y-3 md:space-y-4 pt-2 pb-4 md:pb-6">
+                          {!pastedFile && !userInput.trim() && (
+                            <div className="flex gap-1.5 md:gap-2 flex-wrap justify-center sm:justify-start">
+                              {displayRecommendations.map((suggestion, index) => (
+                                <button
+                                  key={index}
+                                  disabled={isLoading}
+                                  className="bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl px-3 py-2 font-body font-medium text-[12px] md:text-[13px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-default)] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] cursor-pointer transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  onClick={() => setUserInput(suggestion)}
+                                >
+                                  {suggestion}
+                                </button>
+                              ))}
+                            </div>
+                          )}
 
                           <div className="flex gap-2">
                             <div className="flex-1 relative">
-                              <Textarea
-                                placeholder="Describe what you want to build..."
-                                value={userInput}
+                              {isMobile && (
+                                <div className="mb-3 flex items-start gap-2.5 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 text-xs font-medium animate-in fade-in slide-in-from-top-2 duration-300">
+                                  <AlertTriangle className="w-4.5 h-4.5 shrink-0 mt-0.5" />
+                                  <span>DevFlow prompting is not supported on mobile devices. Please switch to a desktop screen to start building.</span>
+                                </div>
+                              )}
+                              {pastedFile && !isMobile && (
+                                <div className="mb-2 flex items-center justify-between p-2.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl w-fit gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200 shadow-sm max-w-full">
+                                  <div 
+                                    className="flex items-center gap-2 cursor-pointer hover:text-[var(--color-accent)] transition-colors min-w-0"
+                                    onClick={() => setViewFileDialogOpen(true)}
+                                  >
+                                    <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 flex items-center justify-center text-[var(--color-accent)] shrink-0">
+                                      <FileText className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0 flex flex-col">
+                                      <span className="text-xs font-semibold truncate text-[var(--color-text-primary)]">
+                                        {pastedFile.name}
+                                      </span>
+                                      <span className="text-[10px] text-[var(--color-text-tertiary)]">
+                                        {Math.round(pastedFile.content.length / 1024 * 100) / 100} KB • {pastedFile.content.split(/\s+/).filter(Boolean).length} words
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button 
+                                    type="button"
+                                    onClick={() => setPastedFile(null)}
+                                    className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)] transition-colors cursor-pointer"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                              <textarea
+                                placeholder={isMobile ? "Prompting is not supported on mobile." : "Describe what you want to build..."}
+                                value={isMobile ? "" : userInput}
                                 onChange={(e) => setUserInput(e.target.value)}
+                                onPaste={isMobile ? undefined : handlePaste}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" && !e.shiftKey) {
                                     e.preventDefault()
-                                    OnGenerate(userInput)
+                                    if (!isMobile) {
+                                      handleWorkspaceGenerate(userInput)
+                                    }
                                   }
                                 }}
-                                className="min-h-24 resize-none pb-12 pr-10 md:pr-12 text-xs md:text-sm bg-[var(--color-bg-surface)] border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:ring-0"
+                                disabled={isLoading || isMobile}
+                                className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[18px] py-4 pr-14 pl-5 pb-14 min-h-28 max-h-60 w-full resize-none overflow-y-auto font-body font-normal text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.15)] disabled:opacity-50 disabled:cursor-not-allowed custom-scrollbar-workspace"
+                                style={{
+                                  transition: "border-color 200ms, box-shadow 200ms",
+                                }}
                               />
 
                               {/* Bottom row actions inside textarea */}
-                              <div className="absolute left-2.5 bottom-2 flex items-center gap-2">
-                                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                  <SelectTrigger className="h-8 border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)]/60 hover:bg-[var(--color-bg-hover)] text-xs md:text-sm font-medium rounded-xl px-3 text-[var(--color-text-secondary)] focus:ring-0 gap-2 w-fit max-w-[280px] shadow-sm transition-all" size="default">
+                              <div className="absolute left-3.5 bottom-3 flex items-center gap-2">
+                                <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isMobile}>
+                                  <SelectTrigger className="h-8 border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)]/60 hover:bg-[var(--color-bg-hover)] text-xs md:text-sm font-medium rounded-xl px-3 text-[var(--color-text-secondary)] focus:ring-0 gap-2 w-fit max-w-[380px] shadow-sm transition-all" size="default">
                                     <SelectValue placeholder="Model Selector" />
                                   </SelectTrigger>
                                   <SelectContent className="bg-[var(--color-bg-surface)] border-[var(--color-border-default)] rounded-xl shadow-lg p-1.5 min-w-[240px] text-xs md:text-sm">
@@ -390,18 +880,19 @@ export default function ChatWorkspacePage() {
                                 </Select>
                               </div>
 
-                              <Button
-                                size="sm"
-                                className={`absolute right-2 bottom-2 h-8 w-8 p-0 rounded-xl shadow-sm transition-all duration-200 ${
-                                  userInput.trim()
-                                    ? "bg-[var(--color-accent)] hover:brightness-110 border border-transparent text-white"
-                                    : "bg-[var(--color-bg-elevated)]/60 hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)]"
-                                }`}
-                                onClick={() => OnGenerate(userInput)}
-                                disabled={!userInput.trim() || isLoading}
-                              >
-                                <Send className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                              </Button>
+                              {!isMobile && (
+                                <button
+                                  className={`absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] shadow-sm transition-all duration-200 ${
+                                    userInput.trim() || pastedFile
+                                      ? "bg-[var(--color-accent)] hover:brightness-110 border border-transparent text-white"
+                                      : "bg-[var(--color-bg-elevated)]/60 hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)]"
+                                  }`}
+                                  onClick={() => handleWorkspaceGenerate(userInput)}
+                                  disabled={!(userInput.trim() || pastedFile) || isLoading}
+                                >
+                                  <Send className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -480,6 +971,58 @@ export default function ChatWorkspacePage() {
               </div>
             </div>
       </div>
+
+      {/* Edit Paste Attachment Modal Dialog */}
+      <Dialog open={viewFileDialogOpen} onOpenChange={setViewFileDialogOpen}>
+        <DialogContent className="max-w-2xl bg-[var(--color-bg-surface)] border-[var(--color-border-default)] shadow-2xl text-[var(--color-text-primary)]">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg font-semibold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-[var(--color-accent)]" />
+              Pasted Prompt Attachment
+            </DialogTitle>
+            <DialogDescription className="font-body text-xs text-[var(--color-text-secondary)]">
+              You pasted a large prompt ({pastedFile?.content.length} characters). You can view or edit the content below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="my-2">
+            <textarea
+              value={pastedFile?.content || ""}
+              onChange={(e) => {
+                if (pastedFile) {
+                  setPastedFile({ ...pastedFile, content: e.target.value });
+                }
+              }}
+              className="w-full h-80 bg-[var(--color-bg-inset)] border border-[var(--color-border-subtle)] rounded-xl p-4 text-xs md:text-sm font-mono text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-0 custom-scrollbar-workspace resize-none overflow-y-auto"
+            />
+          </div>
+          <DialogFooter className="flex justify-between items-center sm:justify-between w-full gap-4">
+            <div className="text-xs text-[var(--color-text-tertiary)] font-medium">
+              {pastedFile ? pastedFile.content.split(/\s+/).filter(Boolean).length : 0} words
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (pastedFile) {
+                    navigator.clipboard.writeText(pastedFile.content);
+                    toast.success("Copied to clipboard!");
+                  }
+                }}
+                className="px-4 py-2 border border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-elevated)] rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Copy
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewFileDialogOpen(false)}
+                className="px-4 py-2 bg-[var(--color-accent)] text-white hover:brightness-110 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

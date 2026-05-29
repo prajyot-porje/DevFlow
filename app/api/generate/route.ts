@@ -16,6 +16,7 @@ interface PlannerPlan {
   dependencies: Record<string, string>;
   files: string[];
   buildOrder: string[];
+  recommendations?: string[];
 }
 
 const PLAN_SYSTEM_PROMPT = `You are a technical planner for a React + Vite frontend code generator.
@@ -27,7 +28,8 @@ Schema:
   "description": "string",
   "dependencies": { "package-name": "version" },
   "files": ["src/App.jsx", "src/index.css", "src/main.jsx"],
-  "buildOrder": ["src/index.css", "src/App.jsx", "src/main.jsx"]
+  "buildOrder": ["src/index.css", "src/App.jsx", "src/main.jsx"],
+  "recommendations": ["string", "string"]
 }
 Rules:
 - Always include src/main.jsx, index.html, package.json in the files array.
@@ -37,7 +39,8 @@ Rules:
 - Only include npm dependencies that are actually needed beyond React 
   and Vite (those are always present).
 - Use React 18, Vite 5, Tailwind CSS 3.
-- Do not include devDependencies in the dependencies field.`;
+- Do not include devDependencies in the dependencies field.
+- In the "recommendations" field, provide exactly 2 short prompt suggestions (maximum 60 characters each) for next logical enhancements or features that the user might want to request for this project.`;
 
 const BUILDER_SYSTEM_PROMPT = `You are a React + Vite frontend code generator. Generate ONLY the raw 
 file content with no explanation, no markdown code fences, no triple 
@@ -72,7 +75,7 @@ Rules:
     }
   }
 - For index.html always load the Tailwind CDN as a fallback:
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com" crossorigin></script>
 - For src/main.jsx always use:
   import React from 'react'
   import ReactDOM from 'react-dom/client'
@@ -112,23 +115,27 @@ export async function POST(req: Request) {
     }
     const convex = new ConvexHttpClient(convexUrl);
 
+    // Fetch initial workspace once to cache in memory
+    const initialWorkspace = await convex.query(api.workspace.GetWorkspace, {
+      workspaceID: workspaceId as Id<"workspaces">,
+    });
+    
+    const workspaceFiles = { ...(initialWorkspace?.files || {}) };
+    const workspaceMessages = [...(initialWorkspace?.messages || [])];
+    const workspaceInfo = { ...(initialWorkspace?.info || {}) };
+
     // Helpers to sync status, messages, and files to Convex in real-time
-    const updateConvexStatus = async (status: "generating" | "done" | "error", details?: { title?: string; description?: string; error?: string }) => {
+    const updateConvexStatus = async (status: "generating" | "done" | "error", details?: { title?: string; description?: string; error?: string; recommendations?: string[] }) => {
       try {
-        const currentWorkspace = await convex.query(api.workspace.GetWorkspace, {
-          workspaceID: workspaceId as Id<"workspaces">,
-        });
-        const currentInfo = currentWorkspace?.info || {};
-        const updatedInfo = {
-          ...currentInfo,
-          status,
-          ...(details?.title ? { title: details.title } : {}),
-          ...(details?.description ? { description: details.description } : {}),
-          ...(details?.error ? { error: details.error } : {}),
-        };
+        workspaceInfo.status = status;
+        if (details?.title) workspaceInfo.title = details.title;
+        if (details?.description) workspaceInfo.description = details.description;
+        if (details?.error) workspaceInfo.error = details.error;
+        if (details?.recommendations) workspaceInfo.recommendations = details.recommendations;
+
         await convex.mutation(api.workspace.Updateinfo, {
           workspaceID: workspaceId as Id<"workspaces">,
-          info: updatedInfo,
+          info: workspaceInfo,
         });
       } catch (err) {
         console.error("[CONVEX_STATUS_ERROR] Failed to update workspace info:", getErrorMessage(err));
@@ -137,29 +144,24 @@ export async function POST(req: Request) {
 
     const updateConvexProgress = async (newContent: string) => {
       try {
-        const currentWorkspace = await convex.query(api.workspace.GetWorkspace, {
-          workspaceID: workspaceId as Id<"workspaces">,
-        });
-        const messages = [...(currentWorkspace?.messages || [])];
-        
         let assistantIndex = -1;
         // Search backwards for the last assistant message
-        for (let i = messages.length - 1; i >= 0; i--) {
-          if (messages[i].role === "assistant" || (messages[i] as { type?: string }).type === "assistant") {
+        for (let i = workspaceMessages.length - 1; i >= 0; i--) {
+          if (workspaceMessages[i].role === "assistant" || (workspaceMessages[i] as { type?: string }).type === "assistant") {
             assistantIndex = i;
             break;
           }
         }
 
         if (assistantIndex !== -1) {
-          messages[assistantIndex].content = newContent;
+          workspaceMessages[assistantIndex].content = newContent;
         } else {
-          messages.push({ role: "assistant", content: newContent, timestamp: Date.now() });
+          workspaceMessages.push({ role: "assistant", content: newContent, timestamp: Date.now() });
         }
         
         await convex.mutation(api.workspace.UpdateMessages, {
           workspaceID: workspaceId as Id<"workspaces">,
-          message: messages,
+          message: workspaceMessages,
         });
       } catch (err) {
         console.error("[CONVEX_PROGRESS_ERROR] Failed to update progress:", getErrorMessage(err));
@@ -168,17 +170,10 @@ export async function POST(req: Request) {
 
     const saveConvexFile = async (filename: string, code: string) => {
       try {
-        const currentWorkspace = await convex.query(api.workspace.GetWorkspace, {
-          workspaceID: workspaceId as Id<"workspaces">,
-        });
-        const existingFiles = currentWorkspace?.files || {};
-        const updatedFiles = {
-          ...existingFiles,
-          [filename]: { code },
-        };
+        workspaceFiles[filename] = { code };
         await convex.mutation(api.workspace.UpdateFiles, {
           workspaceID: workspaceId as Id<"workspaces">,
-          files: updatedFiles,
+          files: workspaceFiles,
         });
       } catch (err) {
         console.error(`[CONVEX_FILE_ERROR] Failed to save file ${filename}:`, getErrorMessage(err));
@@ -191,6 +186,14 @@ export async function POST(req: Request) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       } catch {
         // Client disconnected. We swallow it to continue generation in background.
+      }
+    };
+
+    const safeClose = (controller: ReadableStreamDefaultController) => {
+      try {
+        controller.close();
+      } catch {
+        // Already closed, ignore
       }
     };
 
@@ -264,26 +267,55 @@ export async function POST(req: Request) {
           }
 
           // Sync planner results with Convex
-          await updateConvexStatus("generating", { title: plan.projectTitle, description: plan.description });
-          await updateConvexProgress("Planning complete. Starting code generation...");
+          const planFiles = plan.buildOrder || [];
+          const fileStatuses: Record<string, "pending" | "generating" | "success" | "failed"> = {};
+          planFiles.forEach((file) => {
+            const normalized = file.startsWith("/") ? file : "/" + file;
+            fileStatuses[normalized] = "pending";
+          });
+
+          const syncConvexProgress = async (statusMessage: string) => {
+            let content = `**Project:** ${plan.projectTitle || "DevFlow Project"}\n`;
+            content += `**Status:** ${statusMessage}\n\n`;
+            if (planFiles.length > 0) {
+              content += `**Files:**\n`;
+              planFiles.forEach((file) => {
+                const normalized = file.startsWith("/") ? file : "/" + file;
+                const status = fileStatuses[normalized] || "pending";
+                let statusChar = " ";
+                if (status === "generating") statusChar = "/";
+                else if (status === "success") statusChar = "x";
+                else if (status === "failed") statusChar = "!";
+                content += `- [${statusChar}] \`${normalized}\`\n`;
+              });
+            }
+            await updateConvexProgress(content.trim());
+          };
+
+          await updateConvexStatus("generating", { 
+            title: plan.projectTitle, 
+            description: plan.description,
+            recommendations: plan.recommendations
+          });
+          await syncConvexProgress("Planning complete. Starting code generation...");
           emit(controller, { type: "status", message: "Planning complete" });
           emit(controller, { type: "plan", plan });
 
-          // STEP 2 — BUILDER
+          // STEP 2 — BUILDER & VALIDATOR (Concurrent Processing)
           const generatedFiles = new Map<string, string>();
           const totalFiles = plan.buildOrder.length;
-          console.log(`[BUILDER] Starting code generation for ${totalFiles} files.`);
+          console.log(`[BUILDER] Starting code generation for ${totalFiles} files concurrently.`);
 
-          for (let i = 0; i < totalFiles; i++) {
-            const filename = plan.buildOrder[i];
+          const generateAndValidateFile = async (filename: string) => {
             const formattedFilename = filename.startsWith("/") ? filename : "/" + filename;
 
             emit(controller, {
               type: "status",
-              message: `Generating ${formattedFilename} (${i + 1}/${totalFiles})...`,
+              message: `Generating ${formattedFilename}...`,
             });
-            console.log(`[BUILDER] Generating file: "${formattedFilename}" (${i + 1}/${totalFiles})...`);
-            await updateConvexProgress(`Generating ${formattedFilename} (${i + 1}/${totalFiles})...`);
+            console.log(`[BUILDER] Generating file: "${formattedFilename}"...`);
+            fileStatuses[formattedFilename] = "generating";
+            await syncConvexProgress(`Generating ${formattedFilename}...`);
 
             let fileCode = "";
             let generatedLocally = false;
@@ -297,13 +329,32 @@ export async function POST(req: Request) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${plan.projectTitle || "DevFlow App"}</title>
     <meta name="description" content="${plan.description || "Generated by DevFlow"}" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" crossorigin></script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>`;
+              generatedLocally = true;
+            } else if (formattedFilename === "/src/index.css") {
+              fileCode = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}`;
               generatedLocally = true;
             } else if (formattedFilename === "/src/main.jsx" || formattedFilename === "/src/main.js") {
               fileCode = `import React from 'react'
@@ -354,8 +405,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               generatedFiles.set(formattedFilename, fileCode);
               console.log(`[BUILDER] Generated boilerplate file locally: "${formattedFilename}"`);
               await saveConvexFile(formattedFilename, fileCode);
-            } else {
-              const userMessage = `Generate the complete content for file: ${formattedFilename}
+              emit(controller, { type: "file", filename: formattedFilename, code: fileCode });
+              fileStatuses[formattedFilename] = "success";
+              await syncConvexProgress(`Generated boilerplate ${formattedFilename}`);
+              return { filename: formattedFilename, code: fileCode };
+            }
+
+            // LLM Generation
+            const userMessage = `Generate the complete content for file: ${formattedFilename}
 Project title: ${plan.projectTitle}
 Project description: ${plan.description}
 All files in this project: ${plan.files.map(f => f.startsWith("/") ? f : "/" + f).join(", ")}
@@ -363,43 +420,47 @@ Available dependencies: ${JSON.stringify(plan.dependencies)}
 
 Output only the raw file content. No markdown. No explanation.`;
 
-              try {
-                const fileCodeResponse = await callBuilderWithFallback(BUILDER_SYSTEM_PROMPT, userMessage, selectedModel);
-                generatedFiles.set(formattedFilename, fileCodeResponse);
-                console.log(`[BUILDER] Success generating: "${formattedFilename}"!`);
-              } catch (builderErr: unknown) {
-                console.error(`[BUILDER] Failed to generate ${formattedFilename}:`, getErrorMessage(builderErr));
-                emit(controller, {
-                  type: "status",
-                  message: `Skipping ${formattedFilename} — all models failed`,
-                });
-              }
+            let code = "";
+            try {
+              code = await callBuilderWithFallback(BUILDER_SYSTEM_PROMPT, userMessage, selectedModel);
+              generatedFiles.set(formattedFilename, code);
+              console.log(`[BUILDER] Success generating: "${formattedFilename}"!`);
+            } catch (builderErr: unknown) {
+              console.error(`[BUILDER] Failed to generate ${formattedFilename}:`, getErrorMessage(builderErr));
+              emit(controller, {
+                type: "status",
+                message: `Failed to generate ${formattedFilename} — all models failed`,
+              });
+              fileStatuses[formattedFilename] = "failed";
+              await syncConvexProgress(`Failed to generate ${formattedFilename}`);
+              return { filename: formattedFilename, code: "", error: "generation_failed" };
             }
-          }
 
-          // STEP 3 — VALIDATOR
-          for (const [filename, code] of generatedFiles.entries()) {
-            const isBoilerplate = filename === "/package.json" || filename === "/index.html" || filename === "/src/main.jsx";
-            let syntaxError = isBoilerplate ? null : checkSyntax(code, filename);
+            // Syntax Validation & Auto-Repair
+            const isBoilerplate = formattedFilename === "/package.json" || formattedFilename === "/index.html" || formattedFilename === "/src/main.jsx" || formattedFilename === "/src/index.css";
+            let syntaxError = isBoilerplate ? null : checkSyntax(code, formattedFilename);
             if (!syntaxError) {
-              emit(controller, { type: "file", filename, code });
-              await saveConvexFile(filename, code);
-              continue;
+              await saveConvexFile(formattedFilename, code);
+              emit(controller, { type: "file", filename: formattedFilename, code });
+              fileStatuses[formattedFilename] = "success";
+              await syncConvexProgress(`Successfully generated ${formattedFilename}`);
+              return { filename: formattedFilename, code };
             }
 
-            console.warn(`[VALIDATOR] Syntax error in ${filename}: ${syntaxError}`);
+            console.warn(`[VALIDATOR] Syntax error in ${formattedFilename}: ${syntaxError}`);
             emit(controller, {
               type: "status",
-              message: `Syntax error in ${filename}, attempting auto-repair...`,
+              message: `Syntax error in ${formattedFilename}, attempting auto-repair...`,
             });
-            await updateConvexProgress(`Syntax error in ${filename}, attempting auto-repair...`);
+            fileStatuses[formattedFilename] = "generating";
+            await syncConvexProgress(`Syntax error in ${formattedFilename}, attempting auto-repair...`);
 
             let currentCode = code;
             let repaired = false;
             for (let attempt = 1; attempt <= 2; attempt++) {
               try {
-                currentCode = await callGeminiRepair(filename, syntaxError ?? "Unknown syntax error", currentCode);
-                syntaxError = checkSyntax(currentCode, filename);
+                currentCode = await callGeminiRepair(formattedFilename, syntaxError ?? "Unknown syntax error", currentCode);
+                syntaxError = checkSyntax(currentCode, formattedFilename);
                 if (!syntaxError) {
                   repaired = true;
                   break;
@@ -410,26 +471,38 @@ Output only the raw file content. No markdown. No explanation.`;
             }
 
             if (repaired) {
-              emit(controller, { type: "file", filename, code: currentCode });
+              generatedFiles.set(formattedFilename, currentCode);
+              await saveConvexFile(formattedFilename, currentCode);
+              emit(controller, { type: "file", filename: formattedFilename, code: currentCode });
               emit(controller, {
                 type: "status",
-                message: `Auto-repaired syntax in ${filename}`,
+                message: `Auto-repaired syntax in ${formattedFilename}`,
               });
-              await saveConvexFile(filename, currentCode);
-              await updateConvexProgress(`Auto-repaired syntax in ${filename}`);
+              fileStatuses[formattedFilename] = "success";
+              await syncConvexProgress(`Auto-repaired syntax in ${formattedFilename}`);
+              return { filename: formattedFilename, code: currentCode };
             } else {
+              generatedFiles.set(formattedFilename, currentCode);
+              await saveConvexFile(formattedFilename, currentCode);
               emit(controller, {
                 type: "file",
-                filename,
+                filename: formattedFilename,
                 code: currentCode,
                 warning: "syntax_error",
               });
-              await saveConvexFile(filename, currentCode);
+              fileStatuses[formattedFilename] = "success";
+              await syncConvexProgress(`Generated ${formattedFilename} with warning`);
+              return { filename: formattedFilename, code: currentCode, warning: "syntax_error" };
             }
-          }
+          };
+
+          // Run concurrent file generation and validation
+          await Promise.all(
+            plan.buildOrder.map((filename) => generateAndValidateFile(filename))
+          );
 
           // Generate final success file list and messages
-          const fileList = Object.keys(Object.fromEntries(generatedFiles))
+          const fileList = Array.from(generatedFiles.keys())
             .map((f) => `- \`${f}\``)
             .join("\n");
           const finalContent = `I have successfully generated your project: **${plan.projectTitle}**!\n\n**Description:**\n${plan.description}\n\n**Files generated:**\n${fileList}`;
@@ -438,7 +511,7 @@ Output only the raw file content. No markdown. No explanation.`;
           await updateConvexProgress(finalContent);
 
           emit(controller, { type: "done" });
-          controller.close();
+          safeClose(controller);
         } catch (innerErr: unknown) {
           console.error("[STREAM_PIPELINE_ERROR] Inner pipeline error:", getErrorMessage(innerErr));
           emit(controller, {
@@ -446,7 +519,7 @@ Output only the raw file content. No markdown. No explanation.`;
             message: getErrorMessage(innerErr) || "An error occurred during generation pipeline",
           });
           emit(controller, { type: "done" });
-          controller.close();
+          safeClose(controller);
           await updateConvexStatus("error", { error: getErrorMessage(innerErr) || "An error occurred during generation pipeline" });
           await updateConvexProgress(`⚠️ **Error during generation:** ${getErrorMessage(innerErr) || "An error occurred during generation pipeline"}`);
         }

@@ -29,8 +29,8 @@ export function useCodeEditor({ workspaceId }: UseCodeEditorOptions) {
   }, [files, mountFiles]);
 
   // ── Load workspace data (files + messages) from Convex ─────────────────────
-  const loadWorkspace = useCallback(async () => {
-    setLoadingHistory(true);
+  const loadWorkspace = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoadingHistory(true);
     const result = await convex.query(api.workspace.GetWorkspace, {
       workspaceID: workspaceId as Id<"workspaces">,
     });
