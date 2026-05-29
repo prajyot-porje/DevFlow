@@ -71,8 +71,8 @@ const Header = ({ showHistoryButton = false, onToggleHistory }: { showHistoryBut
 
           {/* DevFlow Icon & Brand name */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-5 h-5 bg-linear-to-br from-violet-600 to-violet-700 dark:from-violet-400 dark:to-violet-500 rounded-md flex items-center justify-center shrink-0">
-              <Sparkles className="w-3 h-3 text-white dark:text-surface-950" />
+            <div className="w-5 h-5 bg-linear-to-br from-[var(--color-accent)] to-violet-600 rounded-lg flex items-center justify-center shrink-0 shadow-[0_0_8px_rgba(140,96,243,0.25)]">
+              <Sparkles className="w-3 h-3 text-white" />
             </div>
             <span className="font-logo font-semibold text-base tracking-normal">
               <span className="text-[var(--color-text-primary)]">Dev </span>

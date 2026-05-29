@@ -179,8 +179,8 @@ export function WebContainerPreview({
     </AlertDialog>
 
     <div
-      className={`bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg overflow-hidden flex flex-col ${
-        isFullscreen ? "fixed inset-4 z-50 rounded-2xl shadow-2xl shadow-black/40" : "h-[79vh]"
+      className={`bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl overflow-hidden flex flex-col shadow-sm ${
+        isFullscreen ? "fixed inset-4 z-50 rounded-2xl shadow-2xl shadow-black/40" : "h-[calc(100vh-180px)] mb-6"
       }`}
     >
       {/* ── Browser Chrome ── */}

@@ -83,10 +83,15 @@ export const iconColors = [
 ];
 
 export const quickPrompts = [
-  "Make a Todo App",
-  "Build a Budget tracker website",
-  "Simple E-commerce website",
-  "Simple Gallery",
+  "Build a SaaS Landing Page",
+  "Create an AI Chat Interface",
+  "Design a Personal Portfolio",
+];
+
+export const existingProjectPrompts = [
+  "Add search and filter functionality",
+  "Implement a responsive dark mode",
+  "Add interactive analytics charts",
 ];
 
 export const DefaultFiles = {

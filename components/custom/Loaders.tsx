@@ -48,7 +48,7 @@ export function CodeTabSkeleton() {
               <Skeleton className="h-4 w-8 flex-shrink-0" />
               <Skeleton
                 className="h-4"
-                style={{ width: `${Math.random() * 60 + 20}%` }}
+                style={{ width: `${((i * 7) % 60) + 25}%` }}
               />
             </div>
           ))}
@@ -132,7 +132,7 @@ export function PreviewTabSkeleton() {
                 key={i}
                 className="h-4 animate-pulse"
                 style={{
-                  width: `${Math.random() * 40 + 60}%`,
+                  width: `${((i * 13) % 40) + 60}%`,
                   animationDelay: `${i * 100}ms`,
                 }}
               />

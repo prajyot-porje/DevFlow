@@ -12,8 +12,14 @@ export default defineSchema({
   }).index("uid", ["uid"]),
   workspaces: defineTable({
     info: v.optional(v.any()),
-    messages: v.any(),
-    files: v.optional(v.any()),
+    // NOTE: existing records may need manual migration if they 
+    // don't conform to this shape. Wipe dev data if needed.
+    messages: v.optional(v.array(v.object({
+      role: v.string(),
+      content: v.string(),
+      timestamp: v.optional(v.number())
+    }))),
+    files: v.optional(v.record(v.string(), v.object({ code: v.string() }))),
     user: v.id("users"),
   }).index("by_user", ["user"]),
 });

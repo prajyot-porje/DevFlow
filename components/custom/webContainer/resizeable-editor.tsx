@@ -394,10 +394,10 @@ export function ResizableEditor({
 
 
   return (
-    <div className="min-w-full">
+    <div className={`min-w-full ${isFullscreen ? "" : "mb-6"}`}>
       <ResizablePanelGroup
         direction="horizontal"
-        className={`border border-[var(--color-border-default)] rounded-lg overflow-hidden min-h-[79vh] bg-[var(--color-bg-page)] ${isFullscreen ? "fixed inset-0 z-50 rounded-none" : ""}`}
+        className={`border border-[var(--color-border-default)] rounded-xl overflow-hidden bg-[var(--color-bg-page)] h-[calc(100vh-180px)] shadow-sm ${isFullscreen ? "fixed inset-0 z-50 rounded-none h-screen" : ""}`}
       >
         {/* ── File Explorer ── */}
         <ResizablePanel
@@ -436,7 +436,7 @@ export function ResizableEditor({
         <ResizableHandle className="w-[1px] bg-[var(--color-border-subtle)] hover:bg-[var(--color-accent)]/30 transition-colors duration-200" />
 
         {/* ── Code Editor ── */}
-        <ResizablePanel className="flex-1 bg-[var(--color-bg-surface)] flex flex-col">
+        <ResizablePanel className="flex-1 bg-[var(--color-bg-surface)] flex flex-col h-full">
           {currentFile ? (
             <>
               {/* Tab bar */}
@@ -548,54 +548,51 @@ export function ResizableEditor({
               </div>
 
               {/* Editor Content */}
-              <div className="flex min-h-[64vh] w-full">
-                <div className="flex-1 relative h-full">
-                  <ScrollArea className="h-[64vh] w-full">
-                    <CodeMirror
-                       ref={codeMirrorRef}
-                       value={unsavedCode !== null ? unsavedCode : currentFile.code}
-                       height="100%"
-                       theme={theme === "dark" ? vscodeDark : sublime}
-                       extensions={[
-                         ...getCodeMirrorExtensions(language),
-                         EditorView.lineWrapping,
-                       ]}
-                       onChange={handleCodeChange}
-                       basicSetup={{
-                         lineNumbers: true,
-                         highlightActiveLine: true,
-                         foldGutter: true,
-                         autocompletion: true,
-                         indentOnInput: true,
-                       }}
-                       style={{
-                         fontSize: `${fontSize}px`,
-                         fontFamily:
-                           'var(--font-mono), Monaco, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Consolas, monospace',
-                         minHeight: "64vh",
-                         height: "100%",
-                         background: "transparent",
-                         overflowX: "hidden",
-                       }}
-                       editable={!readOnly}
-                       spellCheck={false}
-                    />
-                  </ScrollArea>
-                  {/* Unsaved changes bar */}
-                  {showSavePopup && unsavedCode !== null && (
-                    <div className="absolute left-1/2 bottom-6 z-30 -translate-x-1/2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] shadow-xl shadow-black/20 px-5 py-2.5 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                      <div className="w-2 h-2 rounded-full bg-[var(--color-accent)] animate-pulse" />
-                      <span className="text-[13px] font-body text-[var(--color-text-secondary)]">Unsaved changes</span>
-                      <button
-                        onClick={handleSave}
-                        className="text-[13px] font-medium font-body text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors px-3 py-1 rounded-lg hover:bg-[var(--color-accent)]/10"
-                      >
-                        Save
-                      </button>
-                      <span className="text-[11px] font-mono text-[var(--color-text-tertiary)]">Ctrl+S</span>
-                    </div>
-                  )}
-                </div>
+              <div className="flex-1 min-h-0 w-full relative">
+                <ScrollArea className="h-full w-full">
+                  <CodeMirror
+                     ref={codeMirrorRef}
+                     value={unsavedCode !== null ? unsavedCode : currentFile.code}
+                     height="100%"
+                     theme={theme === "dark" ? vscodeDark : sublime}
+                     extensions={[
+                       ...getCodeMirrorExtensions(language),
+                       EditorView.lineWrapping,
+                     ]}
+                     onChange={handleCodeChange}
+                     basicSetup={{
+                       lineNumbers: true,
+                       highlightActiveLine: true,
+                       foldGutter: true,
+                       autocompletion: true,
+                       indentOnInput: true,
+                     }}
+                     style={{
+                       fontSize: `${fontSize}px`,
+                       fontFamily:
+                         'var(--font-mono), Monaco, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Consolas, monospace',
+                       height: "100%",
+                       background: "transparent",
+                       overflowX: "hidden",
+                     }}
+                     editable={!readOnly}
+                     spellCheck={false}
+                  />
+                </ScrollArea>
+                {/* Unsaved changes bar */}
+                {showSavePopup && unsavedCode !== null && (
+                  <div className="absolute left-1/2 bottom-6 z-30 -translate-x-1/2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] shadow-xl shadow-black/20 px-5 py-2.5 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="w-2 h-2 rounded-full bg-[var(--color-accent)] animate-pulse" />
+                    <span className="text-[13px] font-body text-[var(--color-text-secondary)]">Unsaved changes</span>
+                    <button
+                      onClick={handleSave}
+                      className="text-[13px] font-medium font-body text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors px-3 py-1 rounded-lg hover:bg-[var(--color-accent)]/10"
+                    >
+                      Save
+                    </button>
+                    <span className="text-[11px] font-mono text-[var(--color-text-tertiary)]">Ctrl+S</span>
+                  </div>
+                )}
               </div>
 
               {/* Status Bar */}

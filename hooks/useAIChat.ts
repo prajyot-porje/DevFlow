@@ -4,40 +4,22 @@ import { useConvex, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
-import axios from "axios";
 import { GetUserDetails } from "@/hooks/GetUserDetails";
 import type { ChatMessage } from "@/data/Types";
-import { buildCodePrompt, greetingMessage } from "@/data/data";
-import { ChatPrompt } from "@/data/data";
+import { greetingMessage } from "@/data/data";
 import type { InputFileStructure } from "./useWebContainer";
 import { generateUniqueId } from "@/lib/utils";
 import { toast } from "sonner";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Hook options
-// ---------------------------------------------------------------------------
-
 interface UseAIChatOptions {
   workspaceId: string;
-  /** Flat file map used to build the code generation prompt. */
   files: InputFileStructure;
-  /** Called when AI code generation completes. Returns merged file map. */
   onFilesGenerated: (newFiles: InputFileStructure) => Promise<InputFileStructure>;
-  /** Initial message to send when the workspace first loads (from URL param). */
   incomingMessage: string | null;
-  /** Whether the workspace was opened from a template. */
   fromTemplate: boolean;
-  /** Template name (used to suppress greeting on template opens). */
   templateName: string | null;
+  loadWorkspace?: () => Promise<any>;
 }
-
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
 
 export function useAIChat({
   workspaceId,
@@ -46,6 +28,7 @@ export function useAIChat({
   incomingMessage,
   fromTemplate,
   templateName,
+  loadWorkspace,
 }: UseAIChatOptions) {
   const router = useRouter();
   const user = useUser();
@@ -56,7 +39,6 @@ export function useAIChat({
   const updateInfo = useMutation(api.workspace.Updateinfo);
   const canStartConversation = useMutation(api.users.canStartConversation);
 
-  // ── Message state ──────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     if (incomingMessage) return [];
     if (fromTemplate && templateName) return [];
@@ -68,15 +50,25 @@ export function useAIChat({
   const [responseReceived, setResponseReceived] = useState(false);
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   const [userInput, setUserInput] = useState("");
+  const [selectedModel, setSelectedModel] = useState<string>("auto");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const modelParam = params.get("model");
+      if (modelParam) {
+        setSelectedModel(modelParam);
+      }
+    }
+  }, []);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // ── Scroll helper ──────────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // ── Workspace info updater (only writes if field is not yet set) ───────────
   const updateWorkspaceInfoIfNeeded = useCallback(
     async (newTitle?: string, newDesc?: string) => {
       if (!workspaceId) return;
@@ -105,83 +97,244 @@ export function useAIChat({
     [convex, workspaceId, updateInfo]
   );
 
-  // ── Code generation (calls AI_code endpoint, delegates file merge out) ─────
-  const GenerateAiCode = useCallback(
-    async (aiContent: string) => {
-      try {
-        const prompt = buildCodePrompt(files, aiContent);
-        const selectedModel = typeof window !== "undefined" ? localStorage.getItem("ai-model") || undefined : undefined;
-        const result = await axios.post("/api/AI_code", { prompt, model: selectedModel });
-        const code_response = result.data.files;
-
-        if (code_response) {
-          setResponseReceived(true);
-        }
-
-        await onFilesGenerated(code_response ?? {});
-        await updateWorkspaceInfoIfNeeded(undefined, result.data?.description);
-      } catch (err: unknown) {
-        console.error("GenerateAiCode error:", err);
-        toast.error("AI code generation failed. Please try again or refine your prompt.");
-        throw err;
-      }
-    },
-    [files, onFilesGenerated, updateWorkspaceInfoIfNeeded]
-  );
-
-  // ── Main AI chat response ──────────────────────────────────────────────────
   const GetAiResponse = useCallback(
     async (currentMessages: ChatMessage[]) => {
       setIsLoading(true);
       setGeneratingCode(true);
+      setResponseReceived(false);
+
+      const prompt = currentMessages[currentMessages.length - 1].content;
+      const collectedFiles: Record<string, { code: string }> = {};
+      let planTitle = "";
+      let planDesc = "";
+
+      const assistantMsgId = generateUniqueId();
+      const initialAssistantMessage: ChatMessage = {
+        id: assistantMsgId,
+        type: "assistant",
+        content: "Initializing planner...",
+        timestamp: Date.now(),
+      };
+
+      const messagesWithAssistant = [...currentMessages, initialAssistantMessage];
+      setMessages(messagesWithAssistant);
+      scrollToBottom();
+
+      // Cancel previous request if still running
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
 
       try {
-        const pro = JSON.stringify(currentMessages) + (ChatPrompt.CHAT_PROMPT || "");
-        const selectedModel = typeof window !== "undefined" ? localStorage.getItem("ai-model") || undefined : undefined;
-        const response = await axios.post("/api/AI_chat", { prompt: pro, model: selectedModel });
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, workspaceId, selectedModel }),
+          signal,
+        });
 
-        const newTitle: string = response.data.result.title;
-        await updateWorkspaceInfoIfNeeded(newTitle);
-
-        const ai_response: ChatMessage = {
-          id: generateUniqueId(),
-          type: "assistant",
-          content: response.data.result.userResponse,
-          timestamp: Date.now(),
-        };
-
-        const updatedMessages = [...currentMessages, ai_response];
-        setMessages(updatedMessages);
-
-        if (workspaceId) {
-          await updateMessages({
-            message: updatedMessages,
-            workspaceID: workspaceId as Id<"workspaces">,
-          });
-        }
-
-        setIsLoading(false);
-
-        try {
-          await GenerateAiCode(response.data.result.modelResponse);
-        } catch (codeErr) {
-          console.error("Code generation error during chat flow:", codeErr);
-        } finally {
+        if (!response.ok) {
+          const errMsg = `Server returned ${response.status}: ${response.statusText}`;
+          toast.error(errMsg);
+          setIsLoading(false);
           setGeneratingCode(false);
+          return;
         }
-      } catch (err: unknown) {
+
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          if (signal.aborted) {
+            break;
+          }
+
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() ?? "";
+
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const event = JSON.parse(line.slice(6));
+
+              if (event.type === "status") {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMsgId
+                      ? {
+                          ...msg,
+                          content: `${planTitle ? `**Project:** ${planTitle}\n\n` : ""}${event.message}`,
+                        }
+                      : msg
+                  )
+                );
+              }
+
+              if (event.type === "plan") {
+                console.log("[useAIChat] Planner Agent response:", event.plan);
+                planTitle = event.plan.projectTitle;
+                planDesc = event.plan.description;
+                await updateWorkspaceInfoIfNeeded(planTitle, planDesc);
+              }
+
+              if (event.type === "file") {
+                const normalizedFilename = event.filename.startsWith("/") ? event.filename : "/" + event.filename;
+                collectedFiles[normalizedFilename] = { code: event.code };
+              }
+
+              if (event.type === "error") {
+                toast.error(event.message);
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMsgId
+                      ? {
+                          ...msg,
+                          content: `${msg.content}\n\n⚠️ **Error:** ${event.message}`,
+                        }
+                      : msg
+                  )
+                );
+              }
+
+              if (event.type === "done") {
+                setIsLoading(false);
+                setGeneratingCode(false);
+
+                if (Object.keys(collectedFiles).length > 0) {
+                  await onFilesGenerated(collectedFiles);
+                  setResponseReceived(true);
+
+                  const fileList = Object.keys(collectedFiles)
+                    .map((f) => `- \`${f}\``)
+                    .join("\n");
+
+                  const finalContent = `I have successfully generated your project: **${planTitle || "DevFlow Project"}**!\n\n**Description:**\n${planDesc || "No description provided."}\n\n**Files generated:**\n${fileList}`;
+
+                  setMessages((prev) => {
+                    const updated = prev.map((msg) =>
+                      msg.id === assistantMsgId
+                        ? { ...msg, content: finalContent }
+                        : msg
+                    );
+
+                    if (workspaceId) {
+                      updateMessages({
+                        message: updated.map((msg) => ({
+                          role: msg.type === "user" ? "user" : "assistant",
+                          content: msg.content,
+                          timestamp: msg.timestamp,
+                        })),
+                        workspaceID: workspaceId as Id<"workspaces">,
+                      }).catch((e) => console.error("Failed to update messages in Convex:", e));
+                    }
+
+                    return updated;
+                  });
+                }
+              }
+            } catch (err) {
+              // skip malformed JSON chunks silently
+            }
+          }
+          scrollToBottom();
+        }
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          console.log("[useAIChat] Fetch request was aborted dynamically.");
+          return;
+        }
         console.error("AI chat flow error:", err);
         toast.error("Failed to generate AI response. Please try again.");
         setIsLoading(false);
         setGeneratingCode(false);
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMsgId
+              ? {
+                  ...msg,
+                  content: `Failed to generate response: ${err.message || "Unknown error"}`,
+                }
+              : msg
+          )
+        );
       }
     },
-    [updateWorkspaceInfoIfNeeded, workspaceId, updateMessages, GenerateAiCode]
+    [workspaceId, onFilesGenerated, updateWorkspaceInfoIfNeeded, updateMessages, scrollToBottom]
   );
 
-  // ── Trigger AI response when last message is from user ────────────────────
-  // Kept as ref-stable effect to avoid triggering during history load.
+  // ── Poll Convex if workspace status is "generating" ──────────────────────────
+  useEffect(() => {
+    if (!workspaceId || !loadWorkspace) return;
+
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const checkAndPoll = async () => {
+      try {
+        const workspace = await convex.query(api.workspace.GetWorkspace, {
+          workspaceID: workspaceId as Id<"workspaces">,
+        });
+
+        if (workspace?.info?.status === "generating") {
+          setIsLoading(true);
+          setGeneratingCode(true);
+
+          pollInterval = setInterval(async () => {
+            const updated = await loadWorkspace();
+            
+            // Sync messages to local state
+            if (updated?.messages) {
+              const msgs = Array.isArray(updated.messages) ? updated.messages : [updated.messages];
+              const formattedMsgs = msgs.map((m: any, index: number) => ({
+                id: m.id || `msg-${index}-${Date.now()}`,
+                type: (m.role === "user" || m.type === "user" ? "user" : "assistant") as "user" | "assistant",
+                content: m.content || "",
+                timestamp: m.timestamp || Date.now(),
+              }));
+              setMessages(formattedMsgs);
+            }
+
+            if (updated?.info?.status !== "generating") {
+              if (pollInterval) clearInterval(pollInterval);
+              setIsLoading(false);
+              setGeneratingCode(false);
+              
+              if (updated?.files) {
+                await onFilesGenerated(updated.files);
+              }
+            }
+          }, 1500);
+        }
+      } catch (err) {
+        console.error("[useAIChat] Polling check failed:", err);
+      }
+    };
+
+    checkAndPoll();
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [workspaceId, loadWorkspace, convex, onFilesGenerated]);
+
   const loadingHistoryRef = useRef(true);
+
+  // Clean up and abort active streams if workspace changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [workspaceId]);
 
   useEffect(() => {
     if (loadingHistoryRef.current) return;
@@ -192,15 +345,12 @@ export function useAIChat({
       }
     }
     scrollToBottom();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages]);
+  }, [messages, fromTemplate, GetAiResponse, scrollToBottom]);
 
-  /** Called by useCodeEditor after history is loaded to unblock the effect above. */
   const markHistoryLoaded = useCallback(() => {
     loadingHistoryRef.current = false;
   }, []);
 
-  // ── Handle incoming message from URL search param ──────────────────────────
   useEffect(() => {
     if (!incomingMessage) return;
     const decoded = decodeURIComponent(incomingMessage);
@@ -221,10 +371,8 @@ export function useAIChat({
 
       setTimeout(() => setIsLoading(false), 5000);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingMessage]);
+  }, [incomingMessage, messages.length, router]);
 
-  // ── Public: send a user message ───────────────────────────────────────────
   const OnGenerate = useCallback(
     async (input: string) => {
       if (!input.trim()) return;
@@ -257,7 +405,6 @@ export function useAIChat({
   );
 
   return {
-    // State
     messages,
     setMessages,
     isLoading,
@@ -267,11 +414,11 @@ export function useAIChat({
     setLimitDialogOpen,
     userInput,
     setUserInput,
-    // Refs
     messagesEndRef,
-    // Actions
     OnGenerate,
     markHistoryLoaded,
     scrollToBottom,
+    selectedModel,
+    setSelectedModel,
   };
 }
