@@ -15,7 +15,9 @@ export default defineSchema({
     // NOTE: existing records may need manual migration if they 
     // don't conform to this shape. Wipe dev data if needed.
     messages: v.optional(v.array(v.object({
-      role: v.string(),
+      role: v.optional(v.string()),
+      type: v.optional(v.string()),
+      id: v.optional(v.string()),
       content: v.string(),
       timestamp: v.optional(v.number())
     }))),
