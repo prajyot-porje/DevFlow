@@ -14,47 +14,67 @@ interface PlannerPlan {
   projectTitle: string;
   description: string;
   dependencies: Record<string, string>;
+  designSystem?: {
+    style: string;
+    colors: { primary: string; accent: string; background: string };
+    fontFamily: string;
+  };
+  sections?: string[];
   files: string[];
   buildOrder: string[];
   recommendations?: string[];
 }
 
 const PLAN_SYSTEM_PROMPT = `You are a technical planner for a React + Vite frontend code generator.
-Analyze the user prompt and return ONLY a valid JSON object with no 
+Analyze the user prompt and return ONLY a valid JSON object with no
 markdown, no explanation, no code fences, no extra text.
 Schema:
 {
   "projectTitle": "string",
   "description": "string",
   "dependencies": { "package-name": "version" },
-  "files": ["src/App.jsx", "src/index.css", "src/main.jsx"],
-  "buildOrder": ["src/index.css", "src/App.jsx", "src/main.jsx"],
+  "designSystem": {
+    "style": "e.g. Modern SaaS, Minimal, Glassmorphism, Dark Premium",
+    "colors": { "primary": "#hex", "accent": "#hex", "background": "#hex" },
+    "fontFamily": "e.g. Inter, sans-serif"
+  },
+  "sections": ["Navbar", "Hero", "Features", "...more as needed"],
+  "files": ["src/App.jsx", "src/components/Navbar.jsx", "src/components/Hero.jsx"],
+  "buildOrder": ["index.html", "package.json", "src/index.css", "src/components/Navbar.jsx", "src/App.jsx", "src/main.jsx"],
   "recommendations": ["string", "string"]
 }
 Rules:
-- Always include src/main.jsx, index.html, package.json in the files array.
-- Always include them in buildOrder in this order: index.html first, 
-  package.json second, CSS files third, component files last, 
-  src/main.jsx always last.
-- Only include npm dependencies that are actually needed beyond React 
-  and Vite (those are always present).
+- Always include src/main.jsx, index.html, package.json, src/index.css in files.
+- For any UI with multiple sections (landing pages, dashboards, multi-section apps),
+  create separate component files under src/components/ for each section.
+- App.jsx should ONLY import and compose components — never contain inline section code.
+- Each component file should focus on one section (e.g. Hero.jsx, Features.jsx, Footer.jsx).
+- buildOrder: index.html first, package.json second, CSS third, component files next,
+  App.jsx after all components, src/main.jsx always last.
+- The "sections" array lists UI sections in display order.
+- The "designSystem" must define a cohesive visual theme matching the project type.
+- Only include npm dependencies actually needed beyond React and Vite.
 - Use React 18, Vite 5, Tailwind CSS 3.
 - Do not include devDependencies in the dependencies field.
-- In the "recommendations" field, provide exactly 2 short prompt suggestions (maximum 60 characters each) for next logical enhancements or features that the user might want to request for this project.`;
+- In "recommendations", provide exactly 2 short prompt suggestions (max 60 chars) for next enhancements.`;
 
-const BUILDER_SYSTEM_PROMPT = `You are a React + Vite frontend code generator. Generate ONLY the raw 
-file content with no explanation, no markdown code fences, no triple 
+const BUILDER_SYSTEM_PROMPT = `You are a React + Vite frontend code generator. Generate ONLY the raw
+file content with no explanation, no markdown code fences, no triple
 backticks, no commentary, no preamble.
 Output only the exact file content that should be written to disk.
 Rules:
 - Use React 18 functional components with hooks only.
-- Use Tailwind CSS 3 utility classes for all styling. No CSS-in-JS. 
+- Use Tailwind CSS 3 utility classes for all styling. No CSS-in-JS.
   No styled-components. No inline style objects unless absolutely required.
-- All import paths must be relative (e.g. ./components/Button).
+- All import paths must be relative (e.g. ./components/Hero).
 - Do not use require(). Use ES module import/export only.
-- Make designs visually impressive: use gradients, proper spacing, 
+- Each component file must export a single default function component.
+- Keep each file focused and under 120 lines when possible.
+- Follow the project's design system exactly: use the specified colors,
+  fonts, and visual style consistently across all components.
+- Make designs visually impressive: use gradients, proper spacing,
   modern typography, hover effects, and responsive layouts.
-- For package.json, always output valid JSON and merge plan dependencies 
+- For package.json, always output valid JSON and merge plan dependencies
   into this exact base structure:
   {
     "name": "devflow-project",
@@ -108,6 +128,13 @@ export async function POST(req: Request) {
     ) {
       return new Response("Bad Request", { status: 400 });
     }
+
+    // Global time budget to avoid hitting Vercel's hard timeout
+    const GENERATION_START = Date.now();
+    const MAX_GENERATION_MS = 100_000; // 100s budget, 20s safety margin
+    const isTimeBudgetExceeded = () => Date.now() - GENERATION_START > MAX_GENERATION_MS;
+
+    console.log(`[REQUEST] Prompt: "${prompt.slice(0, 80)}..." | Model: ${selectedModel || "auto"}`);
 
     const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
     if (!convexUrl) {
@@ -206,6 +233,7 @@ export async function POST(req: Request) {
 
           // STEP 1 — PLANNER
           emit(controller, { type: "status", message: "Creating plan..." });
+          const plannerStart = Date.now();
 
           let planText = "";
           try {
@@ -216,7 +244,8 @@ export async function POST(req: Request) {
                 setTimeout(() => reject(new Error("Gemini planner timeout")), 12000)
               ),
             ]);
-            console.log("[PLANNER] Gemini success! Raw plan text:\n", planText);
+            const plannerDuration = Date.now() - plannerStart;
+            console.log(`[PLANNER] Gemini success | Duration: ${plannerDuration}ms`);
           } catch (geminiErr: unknown) {
             console.warn("[PLANNER] Gemini failed, falling back to OpenRouter queue. Error:", getErrorMessage(geminiErr));
             
@@ -264,6 +293,18 @@ export async function POST(req: Request) {
             await updateConvexStatus("error", { error: "Planner failed to return valid JSON" });
             await updateConvexProgress("⚠️ **Error:** Planner failed to return valid JSON");
             return;
+          }
+
+          // Ensure boilerplate config files are in the plan
+          const BOILERPLATE_CONFIGS = ["vite.config.js", "tailwind.config.js", "postcss.config.js"];
+          for (const configFile of BOILERPLATE_CONFIGS) {
+            const isPresent = (f: string) => (f.startsWith("/") ? f.substring(1) : f) === configFile;
+            if (!plan.buildOrder.some(isPresent)) {
+              plan.buildOrder.push(configFile);
+            }
+            if (!plan.files.some(isPresent)) {
+              plan.files.push(configFile);
+            }
           }
 
           // Sync planner results with Convex
@@ -399,6 +440,31 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               };
               fileCode = JSON.stringify(packageJsonObj, null, 2);
               generatedLocally = true;
+            } else if (formattedFilename === "/vite.config.js") {
+              fileCode = `import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+});`;
+              generatedLocally = true;
+            } else if (formattedFilename === "/tailwind.config.js") {
+              fileCode = `export default {
+  content: ["./index.html", "./src/**/*.{js,jsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};`;
+              generatedLocally = true;
+            } else if (formattedFilename === "/postcss.config.js") {
+              fileCode = `export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};`;
+              generatedLocally = true;
             }
 
             if (generatedLocally) {
@@ -411,20 +477,41 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               return { filename: formattedFilename, code: fileCode };
             }
 
-            // LLM Generation
-            const userMessage = `Generate the complete content for file: ${formattedFilename}
-Project title: ${plan.projectTitle}
-Project description: ${plan.description}
-All files in this project: ${plan.files.map(f => f.startsWith("/") ? f : "/" + f).join(", ")}
-Available dependencies: ${JSON.stringify(plan.dependencies)}
+            // Check time budget before expensive LLM call
+            if (isTimeBudgetExceeded()) {
+              console.warn(`[BUILDER] Time budget exceeded, skipping ${formattedFilename}`);
+              fileStatuses[formattedFilename] = "failed";
+              await syncConvexProgress(`Skipped ${formattedFilename} (time limit)`);
+              return { filename: formattedFilename, code: "", error: "timeout_budget" };
+            }
 
+            // LLM Generation with design context
+            const isAppFile = formattedFilename.includes("App");
+            const componentName = formattedFilename.split("/").pop()?.replace(/\.\w+$/, "") || "";
+            const designCtx = plan.designSystem
+              ? `\nDesign: style="${plan.designSystem.style}", primary="${plan.designSystem.colors?.primary}", accent="${plan.designSystem.colors?.accent}", bg="${plan.designSystem.colors?.background}", font="${plan.designSystem.fontFamily}"`
+              : "";
+            const sectionsCtx = plan.sections?.length ? `\nSections in order: ${plan.sections.join(", ")}` : "";
+
+            const userMessage = `Generate the complete content for file: ${formattedFilename}
+Project: ${plan.projectTitle} — ${plan.description}${designCtx}${sectionsCtx}
+All files: ${plan.files.map(f => f.startsWith("/") ? f : "/" + f).join(", ")}
+Dependencies: ${JSON.stringify(plan.dependencies)}
+${isAppFile
+  ? "App.jsx must ONLY import and render the component files in order. Do NOT write any section UI code inline."
+  : `This file implements the "${componentName}" section/component.`}
 Output only the raw file content. No markdown. No explanation.`;
 
             let code = "";
+            let modelUsed = "unknown";
+            const fileStartTime = Date.now();
             try {
-              code = await callBuilderWithFallback(BUILDER_SYSTEM_PROMPT, userMessage, selectedModel);
+              const result = await callBuilderWithFallback(BUILDER_SYSTEM_PROMPT, userMessage, selectedModel);
+              code = result.content;
+              modelUsed = result.modelUsed;
               generatedFiles.set(formattedFilename, code);
-              console.log(`[BUILDER] Success generating: "${formattedFilename}"!`);
+              const fileDuration = Date.now() - fileStartTime;
+              console.log(`[BUILDER] File: "${formattedFilename}" | Model: ${modelUsed} | Duration: ${fileDuration}ms`);
             } catch (builderErr: unknown) {
               console.error(`[BUILDER] Failed to generate ${formattedFilename}:`, getErrorMessage(builderErr));
               emit(controller, {
@@ -500,6 +587,12 @@ Output only the raw file content. No markdown. No explanation.`;
           await Promise.all(
             plan.buildOrder.map((filename) => generateAndValidateFile(filename))
           );
+
+          // Final structured logging
+          const totalDuration = Date.now() - GENERATION_START;
+          const successCount = Object.values(fileStatuses).filter(s => s === "success").length;
+          const failedCount = Object.values(fileStatuses).filter(s => s === "failed").length;
+          console.log(`[TOTAL] Files: ${totalFiles} (${successCount} success, ${failedCount} failed) | Duration: ${totalDuration}ms | Model: ${selectedModel || "auto"}`);
 
           // Generate final success file list and messages
           const fileList = Array.from(generatedFiles.keys())

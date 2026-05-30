@@ -3,76 +3,84 @@ export async function callOpenRouter(params: {
   systemPrompt: string;
   userMessage: string;
   maxTokens: number;
+  isUserSelected?: boolean;
 }): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY is not defined in the environment variables.");
   }
 
-  console.log(`[OPENROUTER] Connecting to model "${params.model}"...`);
+  const startTime = Date.now();
+  console.log(`[OPENROUTER] Request: model="${params.model}" userSelected=${params.isUserSelected ?? false}`);
 
-  let timeoutId: NodeJS.Timeout | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error("Timeout"));
-    }, 30000);
-  });
+  // AbortController covers the ENTIRE request lifecycle including response body download.
+  // This fixes the critical bug where response.json() could block indefinitely
+  // after the connection was established, exceeding Vercel's timeout.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 55000); // 55s total budget per model
 
-  const fetchPromise = fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://devflow.app",
-      "X-Title": "DevFlow",
-    },
-    body: JSON.stringify({
-      model: params.model,
-      messages: [
-        { role: "system", content: params.systemPrompt },
-        { role: "user", content: params.userMessage },
-      ],
-      max_tokens: params.maxTokens,
-    }),
-  });
-
-  let response: Response;
   try {
-    response = await Promise.race([fetchPromise, timeoutPromise]);
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://devflow.app",
+        "X-Title": "DevFlow",
+      },
+      body: JSON.stringify({
+        model: params.model,
+        messages: [
+          { role: "system", content: params.systemPrompt },
+          { role: "user", content: params.userMessage },
+        ],
+        max_tokens: params.maxTokens,
+      }),
+    });
+
+    if (response.status === 429) {
+      console.warn(`[OPENROUTER] Model "${params.model}" returned 429 RATE_LIMITED`);
+      throw new Error("RATE_LIMITED");
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`[OPENROUTER] Model "${params.model}" returned error: ${response.status}`);
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const duration = Date.now() - startTime;
+    const content = data.choices?.[0]?.message?.content;
+
+    console.log(
+      `[OPENROUTER] Response: model="${params.model}" duration=${duration}ms tokens=${data.usage?.total_tokens ?? "N/A"}`
+    );
+
+    if (content === undefined || content === null) {
+      throw new Error("Invalid response format from OpenRouter");
+    }
+
+    return content;
   } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    console.warn(`[OPENROUTER] Connection to "${params.model}" failed or timed out: ${errMsg}`);
+    const duration = Date.now() - startTime;
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    if (isAbort) {
+      console.warn(`[OPENROUTER] Model "${params.model}" timed out after ${duration}ms`);
+      throw new Error("Timeout");
+    }
     throw err;
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
   }
-
-  if (response.status === 429) {
-    console.warn(`[OPENROUTER] Model "${params.model}" returned 429 RATE_LIMITED`);
-    throw new Error("RATE_LIMITED");
-  }
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.warn(`[OPENROUTER] Model "${params.model}" returned error status: ${response.status}`);
-    throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
-  }
-
-  console.log(`[OPENROUTER] Connected to "${params.model}". Downloading response body...`);
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (content === undefined || content === null) {
-    throw new Error("Invalid response format from OpenRouter");
-  }
-
-  return content;
 }
 
 export async function callBuilderWithFallback(
   systemPrompt: string,
   userMessage: string,
   selectedModel?: string
-): Promise<string> {
+): Promise<{ content: string; modelUsed: string }> {
   const DEFAULT_BUILDER_MODELS = [
     { model: "poolside/laguna-m.1:free", maxTokens: 32000 },
     { model: "nvidia/nemotron-3-super-120b-a12b:free", maxTokens: 32000 },
@@ -90,16 +98,18 @@ export async function callBuilderWithFallback(
 
   for (let i = 0; i < builderQueue.length; i++) {
     const { model, maxTokens } = builderQueue[i];
+    const isUserSelected = i === 0 && selectedModel === model;
     console.log(`[BUILDER] Attempt ${i + 1}/${builderQueue.length} using model "${model}"...`);
     try {
-      const response = await callOpenRouter({
+      const content = await callOpenRouter({
         model,
         systemPrompt,
         userMessage,
         maxTokens,
+        isUserSelected,
       });
       console.log(`[BUILDER] Success using model "${model}"!`);
-      return response;
+      return { content, modelUsed: model };
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.warn(`[BUILDER] Model "${model}" failed: ${errMsg}. Trying next fallback...`);
