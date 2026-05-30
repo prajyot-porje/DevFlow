@@ -4,8 +4,10 @@ export async function callOpenRouter(params: {
   userMessage: string;
   maxTokens: number;
   isUserSelected?: boolean;
+  customApiKey?: string;
+  timeoutMs?: number;
 }): Promise<string> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = params.customApiKey || process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY_1 || process.env.OPENROUTER_API_KEY_2;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY is not defined in the environment variables.");
   }
@@ -14,10 +16,9 @@ export async function callOpenRouter(params: {
   console.log(`[OPENROUTER] Request: model="${params.model}" userSelected=${params.isUserSelected ?? false}`);
 
   // AbortController covers the ENTIRE request lifecycle including response body download.
-  // This fixes the critical bug where response.json() could block indefinitely
-  // after the connection was established, exceeding Vercel's timeout.
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 55000); // 55s total budget per model
+  const timeoutMs = params.timeoutMs ?? 25000; // Default to 25s instead of 55s
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -79,13 +80,16 @@ export async function callOpenRouter(params: {
 export async function callBuilderWithFallback(
   systemPrompt: string,
   userMessage: string,
-  selectedModel?: string
+  selectedModel?: string,
+  customApiKey?: string
 ): Promise<{ content: string; modelUsed: string }> {
+  // Optimize models and token limits (8192 tokens max) to speed up latency
   const DEFAULT_BUILDER_MODELS = [
-    { model: "poolside/laguna-m.1:free", maxTokens: 32000 },
-    { model: "nvidia/nemotron-3-super-120b-a12b:free", maxTokens: 32000 },
-    { model: "deepseek/deepseek-v4-flash:free", maxTokens: 32000 },
-    { model: "openrouter/free", maxTokens: 32000 },
+    { model: "poolside/laguna-m.1:free", maxTokens: 8192 },
+    { model: "qwen/qwen3-coder:free", maxTokens: 8192 },
+    { model: "deepseek/deepseek-v4-flash:free", maxTokens: 8192 },
+    { model: "nvidia/nemotron-3-super-120b-a12b:free", maxTokens: 8192 },
+    { model: "openrouter/free", maxTokens: 8192 },
   ];
 
   let builderQueue = [...DEFAULT_BUILDER_MODELS];
@@ -96,10 +100,26 @@ export async function callBuilderWithFallback(
     }
   }
 
+  const overallBudgetMs = 50000; // Hard limit: 50s total execution budget for this single file request
+  const fileStartTime = Date.now();
+
   for (let i = 0; i < builderQueue.length; i++) {
     const { model, maxTokens } = builderQueue[i];
+    
+    const elapsed = Date.now() - fileStartTime;
+    const remainingForFile = overallBudgetMs - elapsed;
+    
+    // Fail-fast if we have less than 5s left
+    if (remainingForFile < 5000) {
+      console.warn(`[BUILDER] Skipping model "${model}" due to low remaining budget (${remainingForFile}ms left)`);
+      break;
+    }
+    
+    // Clamp the timeout of this attempt to the smaller of 25s or the remaining budget
+    const attemptTimeout = Math.min(25000, remainingForFile);
+    
     const isUserSelected = i === 0 && selectedModel === model;
-    console.log(`[BUILDER] Attempt ${i + 1}/${builderQueue.length} using model "${model}"...`);
+    console.log(`[BUILDER] Attempt ${i + 1}/${builderQueue.length} using model "${model}" (timeout: ${attemptTimeout}ms)...`);
     try {
       const content = await callOpenRouter({
         model,
@@ -107,6 +127,8 @@ export async function callBuilderWithFallback(
         userMessage,
         maxTokens,
         isUserSelected,
+        customApiKey,
+        timeoutMs: attemptTimeout,
       });
       console.log(`[BUILDER] Success using model "${model}"!`);
       return { content, modelUsed: model };
@@ -116,5 +138,5 @@ export async function callBuilderWithFallback(
     }
   }
 
-  throw new Error("All builder models failed");
+  throw new Error("All builder models failed or timed out within the 50s budget");
 }

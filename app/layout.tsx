@@ -39,6 +39,9 @@ const gradientFont = localFont({
 export const metadata: Metadata = {
   title: "Dev Flow",
   description: "Build Beautiful UIs with AI Magic",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

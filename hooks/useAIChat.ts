@@ -21,6 +21,28 @@ interface UseAIChatOptions {
   loadWorkspace?: (isSilent?: boolean) => Promise<any>;
 }
 
+async function runWithConcurrencyLimit<T, R>(
+  limit: number,
+  items: T[],
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const pool = new Set<Promise<void>>();
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const p = fn(item, i).then((r) => {
+      results.push(r);
+      pool.delete(p);
+    });
+    pool.add(p);
+    if (pool.size >= limit) {
+      await Promise.race(pool);
+    }
+  }
+  await Promise.all(pool);
+  return results;
+}
+
 export function useAIChat({
   workspaceId,
   files,
@@ -37,6 +59,7 @@ export function useAIChat({
 
   const updateMessages = useMutation(api.workspace.UpdateMessages);
   const updateInfo = useMutation(api.workspace.Updateinfo);
+  const updateFiles = useMutation(api.workspace.UpdateFiles);
   const canStartConversation = useMutation(api.users.canStartConversation);
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -142,34 +165,21 @@ export function useAIChat({
         return content.trim();
       };
 
-      const updateFileStatusFromMessage = (msg: string) => {
-        if (msg.startsWith("Generating ")) {
-          const file = msg.slice(11).replace(/\.\.\.$/, "");
-          const normalized = file.startsWith("/") ? file : "/" + file;
-          fileStatuses[normalized] = "generating";
-        }
-        else if (msg.startsWith("Successfully generated ")) {
-          const file = msg.slice(23);
-          const normalized = file.startsWith("/") ? file : "/" + file;
-          fileStatuses[normalized] = "success";
-        }
-        else if (msg.startsWith("Failed to generate ")) {
-          const filePart = msg.slice(19);
-          const file = filePart.split(" — ")[0];
-          const normalized = file.startsWith("/") ? file : "/" + file;
-          if (msg.includes("all models failed")) {
-            fileStatuses[normalized] = "failed";
-          } else {
-            fileStatuses[normalized] = "generating";
-          }
-        }
+      const mapMessagesToDb = (msgsArray: any[]) => {
+        return msgsArray.map((msg) => {
+          const role = "role" in msg ? msg.role : (msg.type === "user" ? "user" : "assistant");
+          return {
+            role,
+            content: msg.content,
+            timestamp: msg.timestamp,
+          };
+        });
       };
 
-      // Set initial user messages (do not add initial assistant message yet)
+      // Set initial user messages
       setMessages(currentMessages);
       scrollToBottom();
 
-      // Cancel previous request if still running
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -177,174 +187,238 @@ export function useAIChat({
       const signal = abortControllerRef.current.signal;
 
       try {
-        const response = await fetch("/api/generate", {
+        // Step 1: Call /api/plan
+        const planResponse = await fetch("/api/plan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, workspaceId, selectedModel }),
+          body: JSON.stringify({ prompt }),
           signal,
         });
 
-        if (!response.ok) {
-          const errMsg = `Server returned ${response.status}: ${response.statusText}`;
-          toast.error(errMsg);
-          setIsLoading(false);
-          setGeneratingCode(false);
-          return;
+        if (!planResponse.ok) {
+          throw new Error(`Failed to generate plan: ${planResponse.statusText}`);
         }
 
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+        const plan = await planResponse.json();
+        console.log("[useAIChat] Plan generated:", plan);
 
-        while (true) {
-          if (signal.aborted) {
-            break;
+        planTitle = plan.projectTitle;
+        planDesc = plan.description;
+        planFiles = plan.buildOrder || [];
+        
+        planFiles.forEach((file) => {
+          const normalized = file.startsWith("/") ? file : "/" + file;
+          fileStatuses[normalized] = "pending";
+        });
+
+        if (plan.recommendations) {
+          setRecommendations(plan.recommendations);
+        }
+
+        // Initialize status in Convex
+        await updateInfo({
+          workspaceID: workspaceId as Id<"workspaces">,
+          info: {
+            status: "generating",
+            title: plan.projectTitle,
+            description: plan.description,
+            recommendations: plan.recommendations,
+          },
+        });
+
+        const initialContent = constructContent("Planning complete. Generating files...");
+
+        // Add the assistant message placeholder
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantMsgId,
+            type: "assistant",
+            content: initialContent,
+            timestamp: Date.now(),
+          },
+        ]);
+        assistantMsgAdded = true;
+
+        await updateMessages({
+          workspaceID: workspaceId as Id<"workspaces">,
+          message: mapMessagesToDb([...currentMessages, {
+            role: "assistant",
+            content: initialContent,
+            timestamp: Date.now()
+          }]),
+        });
+
+        const currentFiles = { ...files };
+
+        // Step 2: Loop through files with concurrency limit of 2
+        await runWithConcurrencyLimit(2, planFiles, async (filename, index) => {
+          if (signal.aborted) return;
+          const normalized = filename.startsWith("/") ? filename : "/" + filename;
+          
+          fileStatuses[normalized] = "generating";
+          const progressContent = constructContent(`Generating ${normalized}...`);
+          
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMsgId ? { ...msg, content: progressContent } : msg
+            )
+          );
+
+          await updateMessages({
+            workspaceID: workspaceId as Id<"workspaces">,
+            message: mapMessagesToDb([...currentMessages, {
+              role: "assistant",
+              content: progressContent,
+              timestamp: Date.now()
+            }]),
+          });
+
+          try {
+            const fileResponse = await fetch("/api/generate-file", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ filename, plan, selectedModel, fileIndex: index }),
+              signal,
+            });
+
+            if (!fileResponse.ok) {
+              throw new Error(`Failed to generate ${filename}`);
+            }
+
+            const result = await fileResponse.json();
+            collectedFiles[normalized] = { code: result.code };
+            currentFiles[normalized] = { code: result.code };
+
+            // Save file in Convex
+            await updateFiles({
+              workspaceID: workspaceId as Id<"workspaces">,
+              files: { ...currentFiles },
+            });
+
+            fileStatuses[normalized] = "success";
+          } catch (fileErr) {
+            console.error(`[useAIChat] Error generating file ${filename}:`, fileErr);
+            fileStatuses[normalized] = "failed";
           }
+        });
 
-          const { done, value } = await reader.read();
-          if (done) break;
+        if (signal.aborted) return;
 
-          buffer += decoder.decode(value, { stream: true });
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() ?? "";
+        // Step 2.5: Self-Healing Retry Phase for failed files
+        const failedFiles = planFiles.filter((filename) => {
+          const normalized = filename.startsWith("/") ? filename : "/" + filename;
+          return fileStatuses[normalized] === "failed";
+        });
 
-          for (const part of parts) {
-            const line = part.trim();
-            if (!line.startsWith("data: ")) continue;
+        if (failedFiles.length > 0 && !signal.aborted) {
+          console.log(`[useAIChat] Retrying ${failedFiles.length} failed files with alternate keys...`);
+          
+          for (const filename of failedFiles) {
+            if (signal.aborted) break;
+            const normalized = filename.startsWith("/") ? filename : "/" + filename;
+            const originalIndex = planFiles.indexOf(filename);
+            
+            // Increment index by 1 to rotate to the alternate OpenRouter key
+            const retryIndex = originalIndex + 1;
+            
+            fileStatuses[normalized] = "generating";
+            const progressContent = constructContent(`Retrying ${normalized} with alternate key...`);
+            
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMsgId ? { ...msg, content: progressContent } : msg
+              )
+            );
+
+            await updateMessages({
+              workspaceID: workspaceId as Id<"workspaces">,
+              message: mapMessagesToDb([...currentMessages, {
+                role: "assistant",
+                content: progressContent,
+                timestamp: Date.now()
+              }]),
+            });
+
             try {
-              const event = JSON.parse(line.slice(6));
+              const fileResponse = await fetch("/api/generate-file", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename, plan, selectedModel, fileIndex: retryIndex }),
+                signal,
+              });
 
-              if (event.type === "status") {
-                updateFileStatusFromMessage(event.message);
-                if (assistantMsgAdded) {
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantMsgId
-                        ? {
-                            ...msg,
-                            content: constructContent(event.message),
-                          }
-                        : msg
-                    )
-                  );
-                }
+              if (!fileResponse.ok) {
+                throw new Error(`Failed to generate ${filename} on retry`);
               }
 
-              if (event.type === "plan") {
-                console.log("[useAIChat] Planner Agent response:", event.plan);
-                planTitle = event.plan.projectTitle;
-                planDesc = event.plan.description;
-                planFiles = event.plan.files || [];
-                planFiles.forEach((file) => {
-                  const normalized = file.startsWith("/") ? file : "/" + file;
-                  fileStatuses[normalized] = "pending";
-                });
+              const result = await fileResponse.json();
+              collectedFiles[normalized] = { code: result.code };
+              currentFiles[normalized] = { code: result.code };
 
-                if (event.plan.recommendations) {
-                  setRecommendations(event.plan.recommendations);
-                }
-                await updateWorkspaceInfoIfNeeded(planTitle, planDesc);
+              // Save file in Convex
+              await updateFiles({
+                workspaceID: workspaceId as Id<"workspaces">,
+                files: { ...currentFiles },
+              });
 
-                // Add the assistant message now
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: assistantMsgId,
-                    type: "assistant",
-                    content: constructContent("Planning complete. Generating files..."),
-                    timestamp: Date.now(),
-                  },
-                ]);
-                assistantMsgAdded = true;
-              }
-
-              if (event.type === "file") {
-                const normalizedFilename = event.filename.startsWith("/") ? event.filename : "/" + event.filename;
-                collectedFiles[normalizedFilename] = { code: event.code };
-              }
-
-              if (event.type === "error") {
-                toast.error(event.message);
-                if (assistantMsgAdded) {
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantMsgId
-                        ? {
-                            ...msg,
-                            content: `${msg.content}\n\n⚠️ **Error:** ${event.message}`,
-                          }
-                        : msg
-                    )
-                  );
-                } else {
-                  setMessages((prev) => [
-                    ...prev,
-                    {
-                      id: assistantMsgId,
-                      type: "assistant",
-                      content: `⚠️ **Error during generation:** ${event.message}`,
-                      timestamp: Date.now(),
-                    },
-                  ]);
-                  assistantMsgAdded = true;
-                }
-              }
-
-              if (event.type === "done") {
-                setIsLoading(false);
-                setGeneratingCode(false);
-
-                // Set remaining pending/generating files to success
-                planFiles.forEach((file) => {
-                  const normalized = file.startsWith("/") ? file : "/" + file;
-                  if (fileStatuses[normalized] === "pending" || fileStatuses[normalized] === "generating") {
-                    fileStatuses[normalized] = "success";
-                  }
-                });
-
-                if (Object.keys(collectedFiles).length > 0) {
-                  await onFilesGenerated(collectedFiles);
-                  setResponseReceived(true);
-
-                  const fileList = planFiles
-                    .map((f) => {
-                      const normalized = f.startsWith("/") ? f : "/" + f;
-                      const status = fileStatuses[normalized];
-                      const char = status === "failed" ? "!" : "x";
-                      return `- [${char}] \`${normalized}\``;
-                    })
-                    .join("\n");
-
-                  const finalContent = `I have successfully generated your project: **${planTitle || "DevFlow Project"}**!\n\n**Description:**\n${planDesc || "No description provided."}\n\n**Files generated:**\n${fileList}`;
-
-                  setMessages((prev) => {
-                    const updated = prev.map((msg) =>
-                      msg.id === assistantMsgId
-                        ? { ...msg, content: finalContent }
-                        : msg
-                    );
-
-                    if (workspaceId) {
-                      updateMessages({
-                        message: updated.map((msg) => ({
-                          role: msg.type === "user" ? "user" : "assistant",
-                          content: msg.content,
-                          timestamp: msg.timestamp,
-                        })),
-                        workspaceID: workspaceId as Id<"workspaces">,
-                      }).catch((e) => console.error("Failed to update messages in Convex:", e));
-                    }
-
-                    return updated;
-                  });
-                }
-              }
-            } catch (err) {
-              // skip malformed JSON chunks silently
+              fileStatuses[normalized] = "success";
+              console.log(`[useAIChat] Alternate key retry succeeded for: ${filename}`);
+            } catch (retryErr) {
+              console.error(`[useAIChat] Alternate key retry failed for ${filename}:`, retryErr);
+              fileStatuses[normalized] = "failed";
             }
           }
-          scrollToBottom();
         }
+
+        if (signal.aborted) return;
+
+        // Step 3: Complete and assemble final output
+        setIsLoading(false);
+        setGeneratingCode(false);
+
+        // Apply generated files to the WebContainer
+        if (Object.keys(collectedFiles).length > 0) {
+          await onFilesGenerated(collectedFiles);
+          setResponseReceived(true);
+        }
+
+        const fileList = planFiles
+          .map((f) => {
+            const normalized = f.startsWith("/") ? f : "/" + f;
+            const status = fileStatuses[normalized];
+            const char = status === "failed" ? "!" : "x";
+            return `- [${char}] \`${normalized}\``;
+          })
+          .join("\n");
+
+        const finalContent = `I have successfully generated your project: **${planTitle || "DevFlow Project"}**!\n\n**Description:**\n${planDesc || "No description provided."}\n\n**Files generated:**\n${fileList}`;
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMsgId ? { ...msg, content: finalContent } : msg
+          )
+        );
+
+        await updateInfo({
+          workspaceID: workspaceId as Id<"workspaces">,
+          info: {
+            status: "done",
+            title: planTitle,
+            description: planDesc,
+            recommendations: plan.recommendations,
+          },
+        });
+
+        await updateMessages({
+          workspaceID: workspaceId as Id<"workspaces">,
+          message: mapMessagesToDb([...currentMessages, {
+            role: "assistant",
+            content: finalContent,
+            timestamp: Date.now()
+          }]),
+        });
+
       } catch (err: any) {
         if (err.name === "AbortError") {
           console.log("[useAIChat] Fetch request was aborted dynamically.");
@@ -355,15 +429,12 @@ export function useAIChat({
         setIsLoading(false);
         setGeneratingCode(false);
 
+        const errorMsg = `⚠️ **Error during generation:** ${err.message || "Unknown error"}`;
+        
         if (assistantMsgAdded) {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === assistantMsgId
-                ? {
-                    ...msg,
-                    content: `⚠️ **Error during generation:** ${err.message || "Unknown error"}`,
-                  }
-                : msg
+              msg.id === assistantMsgId ? { ...msg, content: errorMsg } : msg
             )
           );
         } else {
@@ -372,14 +443,22 @@ export function useAIChat({
             {
               id: assistantMsgId,
               type: "assistant",
-              content: `⚠️ **Error during generation:** ${err.message || "Unknown error"}`,
+              content: errorMsg,
               timestamp: Date.now(),
             },
           ]);
         }
+
+        await updateInfo({
+          workspaceID: workspaceId as Id<"workspaces">,
+          info: {
+            status: "error",
+            error: err.message || "Unknown error",
+          },
+        });
       }
     },
-    [workspaceId, onFilesGenerated, updateWorkspaceInfoIfNeeded, updateMessages, scrollToBottom]
+    [workspaceId, files, onFilesGenerated, updateInfo, updateFiles, updateMessages, scrollToBottom, selectedModel]
   );
 
   const loadWorkspaceRef = useRef(loadWorkspace);

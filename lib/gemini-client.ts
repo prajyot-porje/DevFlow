@@ -1,15 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 
-const getClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
+const getClient = (customApiKey?: string) => {
+  const apiKey = customApiKey || process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY_2;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not defined in the environment variables.");
+    throw new Error("No Gemini API key is defined in the environment variables.");
   }
   return new GoogleGenAI({ apiKey });
 };
 
-export async function callGeminiPlanner(userPrompt: string): Promise<string> {
-  const ai = getClient();
+export async function callGeminiPlanner(userPrompt: string, customApiKey?: string): Promise<string> {
+  const ai = getClient(customApiKey);
 
   const result = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -29,9 +29,10 @@ export async function callGeminiPlanner(userPrompt: string): Promise<string> {
 export async function callGeminiRepair(
   filename: string,
   errorMessage: string,
-  code: string
+  code: string,
+  customApiKey?: string
 ): Promise<string> {
-  const ai = getClient();
+  const ai = getClient(customApiKey);
   const prompt = `Fix all syntax errors in the following code. Return ONLY the corrected file content. No explanation, no markdown, no code fences.
 Filename: ${filename}
 Error: ${errorMessage}
