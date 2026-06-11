@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ProjectsPageSkeleton } from "@/components/custom/Loaders";
-import { iconColors, projectIcons } from "@/data/data";
+import { projectIcons } from "@/data/data";
 
 // ── Deterministic icon/color from project ID ─────────────────────────────────
 const getRandomIcon = (id: string) => {
@@ -47,27 +47,7 @@ const getRandomIcon = (id: string) => {
   return Math.abs(hash) % projectIcons.length;
 };
 
-const getRandomColor = (id: string) => {
-  const hash = id.split("").reduce((a, b) => {
-    a = (a << 7) - a + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  return Math.abs(hash) % iconColors.length;
-};
 
-// ── Accent strip colors for the left edge of each card ───────────────────────
-const accentStrips = [
-  "bg-blue-500",
-  "bg-emerald-500",
-  "bg-purple-500",
-  "bg-orange-500",
-  "bg-pink-500",
-  "bg-indigo-500",
-  "bg-red-500",
-  "bg-amber-500",
-  "bg-teal-500",
-  "bg-cyan-500",
-];
 
 // ── Relative time formatter ──────────────────────────────────────────────────
 const formatTimeAgo = (timestamp: number) => {
@@ -179,7 +159,7 @@ const Projects = () => {
           </div>
           <Button
             onClick={handleNewProject}
-            className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white gap-2 font-medium h-10 px-5 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
+            className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-[var(--color-accent-foreground)] gap-2 font-medium h-10 px-5 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
           >
             <Plus className="h-4 w-4" />
             New Project
@@ -270,7 +250,7 @@ const Projects = () => {
             ) : (
               <Button
                 onClick={handleNewProject}
-                className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white gap-2 font-medium h-10 px-6 rounded-xl"
+                className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-[var(--color-accent-foreground)] gap-2 font-medium h-10 px-6 rounded-xl"
               >
                 <Plus className="h-4 w-4" />
                 Create Your First Project
@@ -282,8 +262,6 @@ const Projects = () => {
           <div className="flex flex-col gap-3">
             {filteredAndSortedProjects.map((project, index) => {
               const IconComponent = projectIcons[getRandomIcon(project._id)];
-              const colorClass = iconColors[getRandomColor(project._id)];
-              const stripColor = accentStrips[getRandomColor(project._id)];
 
               return (
                 <div
@@ -293,11 +271,11 @@ const Projects = () => {
                   style={{ animationDelay: `${Math.min(index * 50, 400)}ms`, animationFillMode: "both" }}
                 >
                   {/* Accent strip */}
-                  <div className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${stripColor} opacity-60 group-hover:opacity-100 transition-opacity duration-200`} />
+                  <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-[var(--color-border-strong)] opacity-40 group-hover:opacity-100 group-hover:bg-[var(--color-accent)] transition-all duration-200" />
 
                   {/* Icon */}
                   <div
-                    className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${colorClass} transition-transform duration-200 group-hover:scale-105`}
+                    className="w-11 h-11 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-inset)] flex items-center justify-center shrink-0 text-[var(--color-text-secondary)] group-hover:text-[var(--color-accent)] group-hover:border-[var(--color-border-strong)] transition-all duration-200 group-hover:scale-105"
                   >
                     <IconComponent className="w-5 h-5" />
                   </div>

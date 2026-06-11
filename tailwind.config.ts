@@ -10,24 +10,24 @@ const config: Config = {
     extend: {
       colors: {
         'surface': {
-          950: '#0e0c15',
-          900: '#16141f',
-          700: '#1f1c2b',
-          500: '#5d5870',
-          300: '#8e8a9c',
+          950: 'var(--color-surface-950)',
+          900: 'var(--color-surface-900)',
+          700: 'var(--color-surface-700)',
+          500: 'var(--color-surface-500)',
+          300: 'var(--color-surface-300)',
         },
         'base': {
-          50:  '#fdfcfe',
-          100: '#f8f6fc',
-          200: '#e4e0ec',
-          400: '#cccad2',
+          50:  'var(--color-base-50)',
+          100: 'var(--color-base-100)',
+          200: 'var(--color-base-200)',
+          400: 'var(--color-base-400)',
         },
         'violet': {
-          300: '#b49cfd',
-          400: '#a78bfa',
-          500: '#8c60f3',
-          600: '#7c3aed',
-          700: '#6d28d9',
+          300: 'var(--color-violet-300)',
+          400: 'var(--color-violet-400)',
+          500: 'var(--color-violet-500)',
+          600: 'var(--color-violet-600)',
+          700: 'var(--color-violet-700)',
         },
       },
       fontFamily: {

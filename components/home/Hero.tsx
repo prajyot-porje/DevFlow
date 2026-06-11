@@ -32,8 +32,7 @@ export function Hero() {
         isDark
           ? {
               backgroundImage: `
-                radial-gradient(ellipse 80% 50% at 0% 0%, rgba(140, 96, 243, 0.05) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 40% at 100% 80%, rgba(42, 38, 57, 0.3) 0%, transparent 50%)
+                radial-gradient(ellipse 80% 50% at 0% 0%, rgba(255, 255, 255, 0.015) 0%, transparent 55%)
               `,
             }
           : undefined
@@ -110,7 +109,7 @@ export function Hero() {
                   router.push("/chat");
                 }}
                 disabled={isNavigating}
-                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-accent)] text-white font-body font-semibold text-sm transition-[transform,filter] duration-fast ease-soft hover:brightness-110 active:scale-95 cursor-pointer shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(140,96,243,0.25)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-70 disabled:cursor-not-allowed"
+                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-accent)] text-[var(--color-accent-foreground)] font-body font-semibold text-sm transition-[transform,filter] duration-fast ease-soft hover:opacity-90 active:scale-95 cursor-pointer shadow-[0_0_0_1px_var(--color-accent),0_4px_12px_rgba(0,0,0,0.1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <span>{isNavigating ? "Loading..." : "Try it now"}</span>
                 {isNavigating ? (

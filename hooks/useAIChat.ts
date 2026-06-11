@@ -250,81 +250,35 @@ export function useAIChat({
         });
 
         const currentFiles = { ...files };
+        const BUILDER_MODELS = [
+          "nvidia/nemotron-3-super-120b-a12b:free",
+          "openai/gpt-oss-20b:free",
+          "meta-llama/llama-3.3-70b-instruct:free",
+          "qwen/qwen3-coder:free",
+          "poolside/laguna-m.1:free",
+        ];
+
+        let winnerModel: string | null = null;
+        const rateLimitedModels = new Set<string>();
 
         // Step 2: Loop through files with concurrency limit of 2
         await runWithConcurrencyLimit(2, planFiles, async (filename, index) => {
           if (signal.aborted) return;
           const normalized = filename.startsWith("/") ? filename : "/" + filename;
-          
-          fileStatuses[normalized] = "generating";
-          const progressContent = constructContent(`Generating ${normalized}...`);
-          
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMsgId ? { ...msg, content: progressContent } : msg
-            )
-          );
 
-          await updateMessages({
-            workspaceID: workspaceId as Id<"workspaces">,
-            message: mapMessagesToDb([...currentMessages, {
-              role: "assistant",
-              content: progressContent,
-              timestamp: Date.now()
-            }]),
-          });
+          let fileSuccess = false;
 
-          try {
-            const fileResponse = await fetch("/api/generate-file", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ filename, plan, selectedModel, fileIndex: index }),
-              signal,
-            });
-
-            if (!fileResponse.ok) {
-              throw new Error(`Failed to generate ${filename}`);
-            }
-
-            const result = await fileResponse.json();
-            collectedFiles[normalized] = { code: result.code };
-            currentFiles[normalized] = { code: result.code };
-
-            // Save file in Convex
-            await updateFiles({
-              workspaceID: workspaceId as Id<"workspaces">,
-              files: { ...currentFiles },
-            });
-
-            fileStatuses[normalized] = "success";
-          } catch (fileErr) {
-            console.error(`[useAIChat] Error generating file ${filename}:`, fileErr);
-            fileStatuses[normalized] = "failed";
-          }
-        });
-
-        if (signal.aborted) return;
-
-        // Step 2.5: Self-Healing Retry Phase for failed files
-        const failedFiles = planFiles.filter((filename) => {
-          const normalized = filename.startsWith("/") ? filename : "/" + filename;
-          return fileStatuses[normalized] === "failed";
-        });
-
-        if (failedFiles.length > 0 && !signal.aborted) {
-          console.log(`[useAIChat] Retrying ${failedFiles.length} failed files with alternate keys...`);
-          
-          for (const filename of failedFiles) {
+          for (let attempt = 0; attempt < BUILDER_MODELS.length; attempt++) {
             if (signal.aborted) break;
-            const normalized = filename.startsWith("/") ? filename : "/" + filename;
-            const originalIndex = planFiles.indexOf(filename);
-            
-            // Increment index by 1 to rotate to the alternate OpenRouter key
-            const retryIndex = originalIndex + 1;
-            
+            const retryIndex = index + attempt;
+            const availableModels = BUILDER_MODELS.filter(m => !rateLimitedModels.has(m));
+            const currentModel = availableModels[retryIndex % availableModels.length] ?? BUILDER_MODELS[0];
+
             fileStatuses[normalized] = "generating";
-            const progressContent = constructContent(`Retrying ${normalized} with alternate key...`);
-            
+            const progressContent = constructContent(
+              `Generating ${normalized} (Attempt ${attempt + 1}/${BUILDER_MODELS.length}: ${currentModel.split("/").pop()})...`
+            );
+
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === assistantMsgId ? { ...msg, content: progressContent } : msg
@@ -344,12 +298,18 @@ export function useAIChat({
               const fileResponse = await fetch("/api/generate-file", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ filename, plan, selectedModel, fileIndex: retryIndex }),
+                body: JSON.stringify({
+                  filename,
+                  plan,
+                  selectedModel: winnerModel !== null ? winnerModel : currentModel,
+                  fileIndex: retryIndex,
+                }),
                 signal,
               });
 
               if (!fileResponse.ok) {
-                throw new Error(`Failed to generate ${filename} on retry`);
+                const errorData = await fileResponse.json().catch(() => ({}));
+                throw new Error(errorData.error || `Failed HTTP ${fileResponse.status}`);
               }
 
               const result = await fileResponse.json();
@@ -363,9 +323,115 @@ export function useAIChat({
               });
 
               fileStatuses[normalized] = "success";
-              console.log(`[useAIChat] Alternate key retry succeeded for: ${filename}`);
-            } catch (retryErr) {
-              console.error(`[useAIChat] Alternate key retry failed for ${filename}:`, retryErr);
+              fileSuccess = true;
+              console.log(`[useAIChat] Succeeded building ${filename} with model ${currentModel}`);
+              if (winnerModel === null) {
+                winnerModel = currentModel;
+              }
+              break; // Success, exit model fallback loop
+            } catch (err) {
+              console.warn(
+                `[useAIChat] Model ${currentModel} failed for ${filename}:`,
+                err instanceof Error ? err.message : err
+              );
+              const errMsg = err instanceof Error ? err.message : String(err);
+              if (errMsg.includes("RATE_LIMITED") || errMsg.includes("429")) {
+                rateLimitedModels.add(currentModel);
+              }
+              // Loop continues to next fallback model...
+            }
+          }
+
+          if (!fileSuccess) {
+            fileStatuses[normalized] = "failed";
+          }
+        });
+
+        if (signal.aborted) return;
+
+        // Step 2.5: Self-Healing Retry Phase for failed files (sequential final pass)
+        const failedFiles = planFiles.filter((filename) => {
+          const normalized = filename.startsWith("/") ? filename : "/" + filename;
+          return fileStatuses[normalized] === "failed";
+        });
+
+        if (failedFiles.length > 0 && !signal.aborted) {
+          console.log(`[useAIChat] Retrying ${failedFiles.length} failed files after queue completion...`);
+          
+          for (const filename of failedFiles) {
+            if (signal.aborted) break;
+            const normalized = filename.startsWith("/") ? filename : "/" + filename;
+            const originalIndex = planFiles.indexOf(filename);
+            
+            let retrySuccess = false;
+            for (let attempt = 0; attempt < BUILDER_MODELS.length; attempt++) {
+              if (signal.aborted) break;
+              const retryIndex = originalIndex + 1 + attempt;
+              const availableModels = BUILDER_MODELS.filter(m => !rateLimitedModels.has(m));
+              const currentModel = availableModels[retryIndex % availableModels.length] ?? BUILDER_MODELS[0];
+
+              fileStatuses[normalized] = "generating";
+              const progressContent = constructContent(
+                `Retrying ${normalized} (Final Pass - Attempt ${attempt + 1}/${BUILDER_MODELS.length}: ${currentModel.split("/").pop()})...`
+              );
+
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMsgId ? { ...msg, content: progressContent } : msg
+                )
+              );
+
+              await updateMessages({
+                workspaceID: workspaceId as Id<"workspaces">,
+                message: mapMessagesToDb([...currentMessages, {
+                  role: "assistant",
+                  content: progressContent,
+                  timestamp: Date.now()
+                }]),
+              });
+
+              try {
+                const fileResponse = await fetch("/api/generate-file", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    filename,
+                    plan,
+                    selectedModel: currentModel,
+                    fileIndex: retryIndex,
+                  }),
+                  signal,
+                });
+
+                if (!fileResponse.ok) {
+                  const errorData = await fileResponse.json().catch(() => ({}));
+                  throw new Error(errorData.error || `Failed HTTP ${fileResponse.status}`);
+                }
+
+                const result = await fileResponse.json();
+                collectedFiles[normalized] = { code: result.code };
+                currentFiles[normalized] = { code: result.code };
+
+                // Save file in Convex
+                await updateFiles({
+                  workspaceID: workspaceId as Id<"workspaces">,
+                  files: { ...currentFiles },
+                });
+
+                fileStatuses[normalized] = "success";
+                retrySuccess = true;
+                console.log(`[useAIChat] Final retry succeeded for: ${filename} using ${currentModel}`);
+                break;
+              } catch (retryErr) {
+                console.error(`[useAIChat] Final retry failed for ${filename} using ${currentModel}:`, retryErr);
+                const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+                if (errMsg.includes("RATE_LIMITED") || errMsg.includes("429")) {
+                  rateLimitedModels.add(currentModel);
+                }
+              }
+            }
+
+            if (!retrySuccess) {
               fileStatuses[normalized] = "failed";
             }
           }

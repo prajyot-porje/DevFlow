@@ -266,7 +266,7 @@ function AssistantMessageCard({ content }: { content: string }) {
         <div className="space-y-2">
           <div className="h-1.5 w-full bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
             <div 
-              className="h-full bg-linear-to-r from-[var(--color-accent)] to-[var(--color-accent-light)] transition-all duration-500 ease-out rounded-full" 
+              className="h-full bg-[var(--color-accent)] transition-all duration-500 ease-out rounded-full" 
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -485,7 +485,6 @@ export default function ChatWorkspacePage() {
   const [modelStatuses, setModelStatuses] = useState<Record<string, "online" | "offline">>({
     "poolside/laguna-m.1:free": "online",
     "nvidia/nemotron-3-super-120b-a12b:free": "online",
-    "deepseek/deepseek-v4-flash:free": "online",
   });
   const [offlineAlertOpen, setOfflineAlertOpen] = useState(false);
 
@@ -511,8 +510,7 @@ export default function ChatWorkspacePage() {
             setModelStatuses(data.statuses);
             const allOffline = 
               data.statuses["poolside/laguna-m.1:free"] === "offline" &&
-              data.statuses["nvidia/nemotron-3-super-120b-a12b:free"] === "offline" &&
-              data.statuses["deepseek/deepseek-v4-flash:free"] === "offline";
+              data.statuses["nvidia/nemotron-3-super-120b-a12b:free"] === "offline";
             if (allOffline) {
               setOfflineAlertOpen(true);
             }
@@ -591,7 +589,7 @@ export default function ChatWorkspacePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-2">
-            <AlertDialogAction className="w-full bg-[var(--color-accent)] text-white hover:brightness-110 rounded-lg font-body font-semibold text-sm py-2.5 transition-all duration-fast cursor-pointer">
+            <AlertDialogAction className="w-full bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 rounded-lg font-body font-semibold text-sm py-2.5 transition-all duration-fast cursor-pointer">
               Understood
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -837,7 +835,7 @@ export default function ChatWorkspacePage() {
                                   }
                                 }}
                                 disabled={isLoading || isMobile}
-                                className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[18px] py-4 pr-14 pl-5 pb-14 min-h-28 max-h-60 w-full resize-none overflow-y-auto font-body font-normal text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.15)] disabled:opacity-50 disabled:cursor-not-allowed custom-scrollbar-workspace"
+                                className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[18px] py-4 pr-14 pl-5 pb-14 min-h-28 max-h-60 w-full resize-none overflow-y-auto font-body font-normal text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_12px_rgba(0,0,0,0.1)] disabled:opacity-50 disabled:cursor-not-allowed custom-scrollbar-workspace"
                                 style={{
                                   transition: "border-color 200ms, box-shadow 200ms",
                                 }}
@@ -867,24 +865,19 @@ export default function ChatWorkspacePage() {
                                     <SelectItem value="nvidia/nemotron-3-super-120b-a12b:free">
                                       <span className="flex items-center gap-2 font-medium">
                                         <span>Nvidia Nemotron-3 Super 120B (Free)</span>
-                                        <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["nvidia/nemotron-3-super-120b-a12b:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
+                                        <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["nvidia/nemotron-3-super-120b-a12b:free"] === "online" ? "bg-[var(--color-text-primary)] animate-pulse" : "bg-[var(--color-text-tertiary)]"}`} />
                                       </span>
                                     </SelectItem>
-                                    <SelectItem value="deepseek/deepseek-v4-flash:free">
-                                      <span className="flex items-center gap-2 font-medium">
-                                        <span>Deepseek v4 Flash (Free)</span>
-                                        <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["deepseek/deepseek-v4-flash:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
-                                      </span>
-                                    </SelectItem>
+
                                   </SelectContent>
                                 </Select>
                               </div>
 
                               {!isMobile && (
                                 <button
-                                  className={`absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] shadow-sm transition-all duration-200 ${
+                                  className={`absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-primary)] shadow-sm transition-all duration-200 ${
                                     userInput.trim() || pastedFile
-                                      ? "bg-[var(--color-accent)] hover:brightness-110 border border-transparent text-white"
+                                      ? "bg-[var(--color-text-primary)] hover:opacity-90 border border-transparent text-[var(--color-bg-page)]"
                                       : "bg-[var(--color-bg-elevated)]/60 hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)]"
                                   }`}
                                   onClick={() => handleWorkspaceGenerate(userInput)}
@@ -1015,7 +1008,7 @@ export default function ChatWorkspacePage() {
               <button
                 type="button"
                 onClick={() => setViewFileDialogOpen(false)}
-                className="px-4 py-2 bg-[var(--color-accent)] text-white hover:brightness-110 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+                className="px-4 py-2 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
               >
                 Done
               </button>

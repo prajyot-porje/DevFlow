@@ -15,9 +15,9 @@ type TemplateName = keyof typeof ProjectTemplates
 
 // ── Category icon mapping ────────────────────────────────────────────────────
 const categoryGradients: Record<string, string> = {
-  Beginner: "from-emerald-500/80 to-teal-600/80",
-  Intermediate: "from-amber-500/80 to-orange-600/80",
-  Advanced: "from-rose-500/80 to-pink-600/80",
+  Beginner: "from-zinc-100 to-zinc-200 dark:from-zinc-900 dark:to-zinc-950",
+  Intermediate: "from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900",
+  Advanced: "from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-800",
 }
 
 const Templates = () => {
@@ -49,11 +49,11 @@ const Templates = () => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+        return "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border-zinc-500/20"
       case "Intermediate":
-        return "bg-amber-500/10 text-amber-400 border-amber-500/20"
+        return "bg-zinc-500/20 text-zinc-700 dark:text-zinc-300 border-zinc-500/30"
       case "Advanced":
-        return "bg-rose-500/10 text-rose-400 border-rose-500/20"
+        return "bg-zinc-800 dark:bg-zinc-200 text-zinc-200 dark:text-zinc-800 border-zinc-700 dark:border-zinc-300"
       default:
         return "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border-default)]"
     }
@@ -177,12 +177,12 @@ const Templates = () => {
               onClick={() => setFilter(opt.value)}
               className={`h-9 px-4 rounded-xl text-sm font-medium font-body transition-all duration-200 flex items-center gap-2 ${
                 filter === opt.value
-                  ? "bg-[var(--color-accent)] text-white shadow-sm"
+                  ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] shadow-sm"
                   : "bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)] hover:border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
               }`}
             >
               {opt.label}
-              <span className={`text-xs ${filter === opt.value ? "text-white/70" : "text-[var(--color-text-tertiary)]"}`}>
+              <span className={`text-xs ${filter === opt.value ? "text-[var(--color-accent-foreground)]/70" : "text-[var(--color-text-tertiary)]"}`}>
                 {opt.count}
               </span>
             </button>
@@ -262,7 +262,7 @@ const Templates = () => {
                   <div className="space-y-1.5 mb-5">
                     {metadata.features.slice(0, 2).map((feature) => (
                       <div key={feature} className="flex items-center gap-2 text-[13px] font-body text-[var(--color-text-secondary)]">
-                        <Zap className="w-3 h-3 text-[var(--color-success)] shrink-0" />
+                        <Zap className="w-3 h-3 text-[var(--color-text-tertiary)] shrink-0" />
                         <span className="truncate">{feature}</span>
                       </div>
                     ))}
@@ -275,7 +275,7 @@ const Templates = () => {
                     <Button
                       size="sm"
                       disabled={isCreating}
-                      className="flex-1 h-9 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white text-[13px] font-medium gap-2 transition-all duration-200 disabled:opacity-50"
+                      className="flex-1 h-9 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-[var(--color-accent-foreground)] text-[13px] font-medium gap-2 transition-all duration-200 disabled:opacity-50"
                       onClick={e => {
                         e.stopPropagation()
                         handleUseTemplate(templateName)
@@ -343,7 +343,7 @@ const Templates = () => {
                   <div className="space-y-2.5">
                     {getTemplateMetadata(selected).features.map((feature) => (
                       <div key={feature} className="flex items-start gap-3 text-[14px] font-body text-[var(--color-text-secondary)]">
-                        <ChevronRight className="w-3.5 h-3.5 text-[var(--color-success)] mt-0.5 shrink-0" />
+                        <ChevronRight className="w-3.5 h-3.5 text-[var(--color-text-tertiary)] mt-0.5 shrink-0" />
                         <span>{feature}</span>
                       </div>
                     ))}
@@ -395,7 +395,7 @@ const Templates = () => {
               {/* CTA */}
               <div className="flex gap-3 mt-8 pt-6 border-t border-[var(--color-border-subtle)]">
                 <Button
-                  className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white gap-2 font-medium h-11 px-6 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                  className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-[var(--color-accent-foreground)] gap-2 font-medium h-11 px-6 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
                   onClick={() => handleUseTemplate(selected)}
                   disabled={isCreating}
                 >

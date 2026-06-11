@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Twitter, Sparkles } from "lucide-react";
+import { Github, Twitter } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -15,12 +15,13 @@ export function Footer() {
               href="/"
               className="flex items-center gap-2.5 transition-opacity hover:opacity-80 mb-4"
             >
-              <div className="w-8 h-8 bg-linear-to-br from-violet-600 to-violet-700 dark:from-violet-400 dark:to-violet-500 rounded-xl flex items-center justify-center shadow-sm">
-                <Sparkles className="w-4 h-4 text-white dark:text-surface-950" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="DevFlow Logo"
+                className="w-8 h-8 object-cover rounded-lg shadow-sm grayscale contrast-125 dark:invert"
+              />
               <span className="font-logo font-semibold text-[22px] tracking-normal">
-                <span className="text-[var(--color-text-primary)]">Dev </span>
-                <span className="text-[var(--color-accent)]">Flow</span>
+                <span className="text-[var(--color-text-primary)]">DevFlow</span>
               </span>
             </Link>
             <p className="font-body text-sm text-[var(--color-text-secondary)] leading-[1.6] max-w-[300px] mb-6">

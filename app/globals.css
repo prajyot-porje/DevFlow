@@ -11,37 +11,38 @@
   --font-logo: var(--font-logo);
 }
 
-/* === DARK MODE (default) — Frosted Amethyst: purple-tinted blacks === */
+/* === DARK MODE (default) — Zinc Monochrome: sleek, high-contrast grays === */
 :root {
-  --color-bg-page:         #0e0c15;   /* Very dark purple-black */
-  --color-bg-surface:      #16141f;   /* Dark plum surface */
-  --color-bg-elevated:     #1f1c2b;   /* Elevated with purple tint */
-  --color-bg-hover:        #2a2639;   /* Hover — noticeable purple */
-  --color-bg-inset:        #08070e;   /* Deep inset */
+  --color-bg-page:         #09090b;   /* zinc-950 */
+  --color-bg-surface:      #0f0f11;   /* elevated surface */
+  --color-bg-elevated:     #18181b;   /* zinc-900 */
+  --color-bg-hover:        #27272a;   /* zinc-800 */
+  --color-bg-inset:        #000000;   /* deep OLED black */
 
-  --color-border-subtle:   rgba(142, 138, 156, 0.10);   /* Barely visible */
-  --color-border-default:  rgba(142, 138, 156, 0.16);   /* Standard borders */
-  --color-border-strong:   rgba(142, 138, 156, 0.28);   /* Emphasized borders */
+  --color-border-subtle:   rgba(255, 255, 255, 0.04);   /* Barely visible */
+  --color-border-default:  rgba(255, 255, 255, 0.08);   /* Standard borders */
+  --color-border-strong:   rgba(255, 255, 255, 0.16);   /* Emphasized borders */
 
-  --color-text-primary:    #eeedf2;   /* Soft white */
-  --color-text-secondary:  #8e8a9c;   /* Muted lavender-gray */
-  --color-text-tertiary:   #5d5870;   /* Purple-gray hints */
-  --color-text-disabled:   #3d3850;   /* Disabled text */
+  --color-text-primary:    #fafafa;   /* zinc-50 */
+  --color-text-secondary:  #a1a1aa;   /* zinc-400 */
+  --color-text-tertiary:   #71717a;   /* zinc-500 */
+  --color-text-disabled:   #3f3f46;   /* zinc-700 */
 
-  --color-accent:          #8c60f3;   /* Violet-500 — primary accent */
-  --color-accent-glow:     rgba(140, 96, 243, 0.15);
-  --color-accent-light:    #a78bfa;   /* Violet-400 — hover/highlight */
+  --color-accent:          #ffffff;   /* Pure white accent */
+  --color-accent-glow:     rgba(255, 255, 255, 0.08);
+  --color-accent-light:    #e4e4e7;   /* zinc-200 */
+  --color-accent-foreground: #09090b; /* zinc-950 (text color on white background) */
 
-  --color-code-bg:         #08070e;   /* Deep purple inset for code blocks */
-  --color-code-text:       #b49cfd;   /* Lighter violet for readability */
+  --color-code-bg:         #18181b;   /* code background */
+  --color-code-text:       #fafafa;   /* code text */
 
   /* Chat-specific semantic tokens */
-  --color-bg-chat-user:    rgba(140, 96, 243, 0.08);   /* User message tint */
-  --color-bg-chat-ai:      #16141f;   /* AI message — same as surface */
+  --color-bg-chat-user:    rgba(255, 255, 255, 0.05);   /* User message background */
+  --color-bg-chat-ai:      #0f0f11;   /* Same as surface */
 
   /* Skeleton/loading tokens */
-  --color-bg-skeleton:     #1f1c2b;   /* Skeleton shimmer base */
-  --color-bg-skeleton-shine: #2a2639; /* Skeleton shimmer highlight */
+  --color-bg-skeleton:     #18181b;
+  --color-bg-skeleton-shine: #27272a;
 
   --color-success:         #22C55E;
   --color-warning:         #F59E0B;
@@ -60,13 +61,13 @@
   --text-4xl:  4.209rem;   /* 67.3px */
   --text-5xl:  5.61rem;    /* 89.8px */
 
-  /* Shadows - Dark Mode (purple-tinted) */
-  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md:  0 4px 8px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-lg:  0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.25);
-  --shadow-xl:  0 16px 32px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3);
-  --shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(140, 96, 243, 0.2);
+  /* Shadows - Dark Mode (Grayscale) */
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md:  0 4px 8px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg:  0 8px 16px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.35);
+  --shadow-xl:  0 16px 32px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-accent: 0 0 0 1px var(--color-border-strong), 0 4px 12px rgba(0, 0, 0, 0.5);
 
   /* Easing curves */
   --ease-out:       cubic-bezier(0.16, 1, 0.3, 1);
@@ -94,42 +95,43 @@
   --muted: var(--color-bg-elevated);
   --muted-foreground: var(--color-text-secondary);
   --accent: var(--color-accent);
-  --accent-foreground: var(--color-bg-page);
+  --accent-foreground: var(--color-accent-foreground);
   --ring: var(--color-accent);
 }
 
-/* === LIGHT MODE — Frosted Amethyst: lavender frost === */
+/* === LIGHT MODE — Zinc Monochrome: clean white & charcoal === */
 [data-theme="light"],
 .light {
-  --color-bg-page:         #fdfcfe;   /* Almost white, barely violet */
-  --color-bg-surface:      #f8f6fc;   /* Near-white violet tint */
-  --color-bg-elevated:     #ffffff;
-  --color-bg-hover:        #efeaf8;   /* Noticeably lavender hover */
-  --color-bg-inset:        #e4e0ec;   /* Lavender inset */
+  --color-bg-page:         #ffffff;   /* Pure white */
+  --color-bg-surface:      #fafafa;   /* zinc-50 */
+  --color-bg-elevated:     #f4f4f5;   /* zinc-100 */
+  --color-bg-hover:        #e4e4e7;   /* zinc-200 */
+  --color-bg-inset:        #f4f4f5;
 
-  --color-border-subtle:   rgba(86, 83, 95, 0.07);
-  --color-border-default:  rgba(86, 83, 95, 0.13);
-  --color-border-strong:   rgba(86, 83, 95, 0.22);
+  --color-border-subtle:   rgba(9, 9, 11, 0.04);
+  --color-border-default:  rgba(9, 9, 11, 0.08);
+  --color-border-strong:   rgba(9, 9, 11, 0.15);
 
-  --color-text-primary:    #1e1a2d;   /* Deep purple-navy */
-  --color-text-secondary:  #4f4b5c;   /* Warm mid-gray */
-  --color-text-tertiary:   #8e8a9c;   /* Muted lavender-gray */
-  --color-text-disabled:   #cccad2;
+  --color-text-primary:    #09090b;   /* zinc-950 */
+  --color-text-secondary:  #52525b;   /* zinc-600 */
+  --color-text-tertiary:   #71717a;   /* zinc-500 */
+  --color-text-disabled:   #d4d4d8;   /* zinc-300 */
 
-  --color-accent:          #7c3aed;   /* Deeper violet for contrast */
-  --color-accent-glow:     rgba(124, 58, 237, 0.08);
-  --color-accent-light:    #8c60f3;
+  --color-accent:          #09090b;   /* Pure black/zinc-950 accent */
+  --color-accent-glow:     rgba(9, 9, 11, 0.05);
+  --color-accent-light:    #27272a;   /* zinc-800 */
+  --color-accent-foreground: #ffffff; /* white text on black background */
 
-  --color-code-bg:         #ede8f5;   /* Softer lavender than inset */
-  --color-code-text:       #6d28d9;   /* Violet-700 */
+  --color-code-bg:         #f4f4f5;
+  --color-code-text:       #09090b;
 
   /* Chat-specific semantic tokens */
-  --color-bg-chat-user:    rgba(124, 58, 237, 0.06);
-  --color-bg-chat-ai:      #f8f6fc;
+  --color-bg-chat-user:    rgba(9, 9, 11, 0.03);
+  --color-bg-chat-ai:      #fafafa;
 
   /* Skeleton/loading tokens */
-  --color-bg-skeleton:     #e4e0ec;
-  --color-bg-skeleton-shine: #cccad2;
+  --color-bg-skeleton:     #e4e4e7;
+  --color-bg-skeleton-shine: #d4d4d8;
 
   --color-success:         #16A34A;
   --color-warning:         #D97706;
@@ -137,11 +139,11 @@
   --color-online:          #16A34A;
 
   /* Shadows - Light Mode */
-  --shadow-xs:  0 1px 2px rgba(30, 26, 45, 0.06);
-  --shadow-sm:  0 2px 4px rgba(30, 26, 45, 0.05), 0 1px 2px rgba(30, 26, 45, 0.08);
-  --shadow-md:  0 4px 8px rgba(30, 26, 45, 0.06), 0 2px 4px rgba(30, 26, 45, 0.05);
-  --shadow-lg:  0 8px 16px rgba(30, 26, 45, 0.08), 0 4px 8px rgba(30, 26, 45, 0.06);
-  --shadow-accent: 0 0 0 1px var(--color-accent), 0 4px 16px rgba(124, 58, 237, 0.15);
+  --shadow-xs:  0 1px 2px rgba(9, 9, 11, 0.05);
+  --shadow-sm:  0 2px 4px rgba(9, 9, 11, 0.04), 0 1px 2px rgba(9, 9, 11, 0.06);
+  --shadow-md:  0 4px 8px rgba(9, 9, 11, 0.05), 0 2px 4px rgba(9, 9, 11, 0.04);
+  --shadow-lg:  0 8px 16px rgba(9, 9, 11, 0.06), 0 4px 8px rgba(9, 9, 11, 0.05);
+  --shadow-accent: 0 0 0 1px var(--color-border-strong), 0 4px 12px rgba(9, 9, 11, 0.05);
 
   --background: var(--color-bg-page);
   --foreground: var(--color-text-primary);
@@ -153,7 +155,7 @@
   --muted: var(--color-bg-elevated);
   --muted-foreground: var(--color-text-secondary);
   --accent: var(--color-accent);
-  --accent-foreground: var(--color-bg-page);
+  --accent-foreground: var(--color-accent-foreground);
   --ring: var(--color-accent);
 }
 
@@ -166,13 +168,13 @@
   --color-popover: var(--color-bg-surface);
   --color-popover-foreground: var(--color-text-primary);
   --color-primary: var(--color-text-primary);
-  --color-primary-foreground: var(--color-bg-page);
+  --color-primary-foreground: var(--color-accent-foreground);
   --color-secondary: var(--color-bg-elevated);
   --color-secondary-foreground: var(--color-text-primary);
   --color-muted: var(--color-bg-elevated);
   --color-muted-foreground: var(--color-text-secondary);
   --color-accent: var(--color-accent);
-  --color-accent-foreground: var(--color-bg-page);
+  --color-accent-foreground: var(--color-accent-foreground);
   --color-destructive: var(--color-danger);
   --color-destructive-foreground: #ffffff;
   --color-border: var(--color-border-default);
@@ -183,31 +185,31 @@
   --color-sidebar: var(--color-bg-surface);
   --color-sidebar-foreground: var(--color-text-secondary);
   --color-sidebar-primary: var(--color-accent);
-  --color-sidebar-primary-foreground: var(--color-bg-page);
+  --color-sidebar-primary-foreground: var(--color-accent-foreground);
   --color-sidebar-accent: var(--color-bg-hover);
   --color-sidebar-accent-foreground: var(--color-text-primary);
   --color-sidebar-border: var(--color-border-subtle);
   --color-sidebar-ring: var(--color-accent);
 
-  /* Surface colors — dark mode bg shades (replaces navy) */
-  --color-surface-950: #0e0c15;
-  --color-surface-900: #16141f;
-  --color-surface-700: #1f1c2b;
-  --color-surface-500: #5d5870;
-  --color-surface-300: #8e8a9c;
+  /* Surface colors — mapped to Zinc dark shades */
+  --color-surface-950: #09090b;
+  --color-surface-900: #0f0f11;
+  --color-surface-700: #18181b;
+  --color-surface-500: #27272a;
+  --color-surface-300: #3f3f46;
 
-  /* Base colors — light mode bg shades (replaces cream) */
-  --color-base-50:  #fdfcfe;
-  --color-base-100: #f8f6fc;
-  --color-base-200: #e4e0ec;
-  --color-base-400: #cccad2;
+  /* Base colors — mapped to Zinc light shades */
+  --color-base-50:  #ffffff;
+  --color-base-100: #fafafa;
+  --color-base-200: #f4f4f5;
+  --color-base-400: #e4e4e7;
 
-  /* Violet accent family (replaces cyan accent) */
-  --color-violet-300: #b49cfd;
-  --color-violet-400: #a78bfa;
-  --color-violet-500: #8c60f3;
-  --color-violet-600: #7c3aed;
-  --color-violet-700: #6d28d9;
+  /* Violet accent family — mapped to Grayscale shades */
+  --color-violet-300: #d4d4d8;
+  --color-violet-400: #a1a1aa;
+  --color-violet-500: #71717a;
+  --color-violet-600: #52525b;
+  --color-violet-700: #3f3f46;
 
   --font-heading: var(--font-heading), system-ui;
   --font-body: var(--font-body), system-ui;
@@ -256,13 +258,12 @@ body {
   font-family: var(--font-body);
 }
 
-/* Dark mode grid texture — updated for Frosted Amethyst palette */
+/* Dark mode grid texture — monochrome/grayscale dot grid */
 html[data-theme="dark"] body,
 :root:not([data-theme="light"]):not(.light) body {
   background-image:
-    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(140, 96, 243, 0.04) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 100% 80%, rgba(31, 28, 43, 0.4) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%238e8a9c' fill-opacity='0.04'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(255, 255, 255, 0.015) 0%, transparent 55%),
+    url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%23a1a1aa' fill-opacity='0.03'/%3E%3C/svg%3E");
 }
 
 /* Hide scrollbar */

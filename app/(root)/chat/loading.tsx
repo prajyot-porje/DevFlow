@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function ChatLoading() {
   return (
@@ -8,10 +8,11 @@ export default function ChatLoading() {
         {/* Glow effect */}
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-28 h-28 bg-[var(--color-accent)] opacity-10 rounded-full blur-2xl animate-pulse" />
         
-        {/* Pulsing Logo Container */}
-        <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--color-accent)] to-violet-600 flex items-center justify-center shadow-[0_0_20px_rgba(140,96,243,0.25)] mb-6 animate-bounce">
-          <Sparkles className="w-7 h-7 text-white" />
-        </div>
+        <img
+          src="/logo.png"
+          alt="DevFlow Logo"
+          className="relative w-14 h-14 rounded-xl object-cover shadow-sm grayscale contrast-125 dark:invert mb-6 animate-bounce"
+        />
 
         {/* Loading text with a subtle spinner */}
         <div className="flex items-center gap-2 mb-2 justify-center">

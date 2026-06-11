@@ -58,7 +58,6 @@ export default function DevFlow() {
   const [modelStatuses, setModelStatuses] = useState<Record<string, "online" | "offline">>({
     "poolside/laguna-m.1:free": "online",
     "nvidia/nemotron-3-super-120b-a12b:free": "online",
-    "deepseek/deepseek-v4-flash:free": "online",
   });
   const [offlineAlertOpen, setOfflineAlertOpen] = useState(false);
 
@@ -96,8 +95,7 @@ export default function DevFlow() {
             setModelStatuses(data.statuses);
             const allOffline = 
               data.statuses["poolside/laguna-m.1:free"] === "offline" &&
-              data.statuses["nvidia/nemotron-3-super-120b-a12b:free"] === "offline" &&
-              data.statuses["deepseek/deepseek-v4-flash:free"] === "offline";
+              data.statuses["nvidia/nemotron-3-super-120b-a12b:free"] === "offline";
             if (allOffline) {
               setOfflineAlertOpen(true);
             }
@@ -182,7 +180,7 @@ export default function DevFlow() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-2">
-            <AlertDialogAction className="w-full bg-[var(--color-accent)] text-white hover:brightness-110 rounded-lg font-body font-semibold text-sm py-2.5 transition-all duration-fast cursor-pointer">
+            <AlertDialogAction className="w-full bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 rounded-lg font-body font-semibold text-sm py-2.5 transition-all duration-fast cursor-pointer">
               Understood
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -195,7 +193,7 @@ export default function DevFlow() {
           style={
             isDark
               ? {
-                  backgroundImage: `radial-gradient(ellipse 80% 50% at 0% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 100% 80%, rgba(35, 53, 77, 0.3) 0%, transparent 50%)`
+                  backgroundImage: `radial-gradient(ellipse 80% 50% at 0% 0%, rgba(255, 255, 255, 0.015) 0%, transparent 55%)`
                 }
               : undefined
           }
@@ -257,7 +255,7 @@ export default function DevFlow() {
                     }
                   }
                 }}
-                className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[18px] py-4 pr-14 pl-5 pb-14 min-h-28 max-h-60 w-full resize-none overflow-y-auto font-body font-normal text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(14,165,233,0.15)] disabled:opacity-50 disabled:cursor-not-allowed custom-scrollbar-chat"
+                className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-[18px] py-4 pr-14 pl-5 pb-14 min-h-28 max-h-60 w-full resize-none overflow-y-auto font-body font-normal text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_var(--color-accent),0_4px_12px_rgba(0,0,0,0.1)] disabled:opacity-50 disabled:cursor-not-allowed custom-scrollbar-chat"
                 style={{
                   transition: "border-color 200ms, box-shadow 200ms",
                 }}
@@ -288,12 +286,7 @@ export default function DevFlow() {
                         <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["nvidia/nemotron-3-super-120b-a12b:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
                       </span>
                     </SelectItem>
-                    <SelectItem value="deepseek/deepseek-v4-flash:free">
-                      <span className="flex items-center gap-2 font-medium">
-                        <span>Deepseek v4 Flash (Free)</span>
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["deepseek/deepseek-v4-flash:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
-                      </span>
-                    </SelectItem>
+
                   </SelectContent>
                 </Select>
               </div>
@@ -301,7 +294,7 @@ export default function DevFlow() {
                 <button
                   className={`absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] shadow-sm transition-all duration-200 ${
                     userInput.trim() || pastedFile
-                      ? "bg-[var(--color-accent)] hover:brightness-110 border border-transparent text-white"
+                      ? "bg-[var(--color-accent)] hover:opacity-90 border border-transparent text-[var(--color-accent-foreground)]"
                       : "bg-[var(--color-bg-elevated)]/60 hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)]"
                   }`}
                   style={{
@@ -394,7 +387,7 @@ export default function DevFlow() {
               <button
                 type="button"
                 onClick={() => setViewFileDialogOpen(false)}
-                className="px-4 py-2 bg-[var(--color-accent)] text-white hover:brightness-110 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+                className="px-4 py-2 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
               >
                 Done
               </button>

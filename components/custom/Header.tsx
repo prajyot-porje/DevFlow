@@ -1,7 +1,7 @@
 "use client"
 import { SignedIn, UserButton } from "@clerk/nextjs"
 import { useEffect, useState } from "react"
-import { Bell, Moon, Search, Sun, Zap, Sparkles, Menu, Clock } from "lucide-react"
+import { Bell, Moon, Search, Sun, Zap, Menu, Clock } from "lucide-react"
 import { useTheme } from "next-themes"
 import {
   DropdownMenu,
@@ -71,12 +71,13 @@ const Header = ({ showHistoryButton = false, onToggleHistory }: { showHistoryBut
 
           {/* DevFlow Icon & Brand name */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-5 h-5 bg-linear-to-br from-[var(--color-accent)] to-violet-600 rounded-lg flex items-center justify-center shrink-0 shadow-[0_0_8px_rgba(140,96,243,0.25)]">
-              <Sparkles className="w-3 h-3 text-white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="DevFlow Logo"
+              className="w-5 h-5 object-cover rounded shrink-0 shadow-sm grayscale contrast-125 dark:invert"
+            />
             <span className="font-logo font-semibold text-base tracking-normal">
-              <span className="text-[var(--color-text-primary)]">Dev </span>
-              <span className="text-[var(--color-accent)]">Flow</span>
+              <span className="text-[var(--color-text-primary)]">DevFlow</span>
             </span>
             <span className="text-[var(--color-text-tertiary)] hidden sm:inline">/</span>
             <span className="font-body text-sm font-medium text-[var(--color-text-secondary)] hidden sm:inline truncate max-w-[200px]">
@@ -98,7 +99,7 @@ const Header = ({ showHistoryButton = false, onToggleHistory }: { showHistoryBut
               <span className="truncate text-left text-[13px]">Search...</span>
             </div>
             <kbd className="hidden md:inline-flex items-center h-5 px-1.5 bg-[var(--color-bg-inset)]/50 border border-[var(--color-border-subtle)] text-[10px] text-[var(--color-text-tertiary)] font-mono font-medium rounded-md tracking-widest shrink-0 select-none shadow-xs">
-              {typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || "") ? '⌘K' : 'Ctrl+K'}
+              {mounted && typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || "") ? '⌘K' : 'Ctrl+K'}
             </kbd>
           </button>
 

@@ -216,7 +216,7 @@ export function WebContainerPreview({
         </AlertDialogHeader>
         <AlertDialogAction
           onClick={() => setIError(false)}
-          className="rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white"
+          className="rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-[var(--color-accent-foreground)]"
         >
           OK
         </AlertDialogAction>
@@ -273,7 +273,7 @@ export function WebContainerPreview({
               size="sm"
               onClick={onStart}
               disabled={!webContainer || isRunning}
-              className="h-7 text-[12px] rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white gap-1 px-3 font-medium"
+              className="h-7 text-[12px] rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-[var(--color-accent-foreground)] gap-1 px-3 font-medium"
             >
               <Play className="h-3 w-3" />
               Start
@@ -351,7 +351,7 @@ export function WebContainerPreview({
                         </p>
                         <Button
                           onClick={onStart}
-                          className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-white gap-2 rounded-xl h-10 px-5 font-medium"
+                          className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-light)] text-[var(--color-accent-foreground)] gap-2 rounded-xl h-10 px-5 font-medium"
                         >
                           <Play className="h-4 w-4" />
                           Start Server

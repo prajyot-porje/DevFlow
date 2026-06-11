@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   title: "Dev Flow",
   description: "Build Beautiful UIs with AI Magic",
   icons: {
-    icon: "/icon.svg",
+    icon: "/logo.png",
   },
 };
 
@@ -50,8 +50,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <>
-
       <html lang="en" suppressHydrationWarning>
         <body className={`${onest.variable} ${figtree.variable} ${jetbrainsMono.variable} ${gradientFont.variable}`}>
           <NextTopLoader
@@ -73,10 +71,9 @@ export default function RootLayout({
               </ClientProviders>
             </ClerkProvider>
           </ThemeProvider>
+          {process.env.NODE_ENV === "development" && <Agentation />}
         </body>
       </html>
-      {process.env.NODE_ENV === "development" && <Agentation />}
-    </>
   );
 }
 

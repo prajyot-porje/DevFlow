@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
-import { callBuilderWithFallback } from "@/lib/openrouter-client";
+import { callOpenRouter } from "@/lib/openrouter-client";
 import { checkSyntax } from "@/lib/validator";
 import { callGeminiRepair } from "@/lib/gemini-client";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const BUILDER_SYSTEM_PROMPT = `You are a React + Vite frontend code generator. Generate ONLY the raw
 file content with no explanation, no markdown code fences, no triple
@@ -214,20 +215,26 @@ Output only the raw file content. No markdown. No explanation.`;
       : undefined;
 
     const fileStartTime = Date.now();
-    let result;
+    let code = "";
     try {
-      result = await callBuilderWithFallback(BUILDER_SYSTEM_PROMPT, userMessage, selectedModel, selectedKey);
+      const modelToUse = selectedModel && selectedModel !== "auto" ? selectedModel : "poolside/laguna-m.1:free";
+      code = await callOpenRouter({
+        model: modelToUse,
+        systemPrompt: BUILDER_SYSTEM_PROMPT,
+        userMessage,
+        maxTokens: 8192,
+        customApiKey: selectedKey,
+        timeoutMs: 90000,
+      });
       const duration = Date.now() - fileStartTime;
-      console.log(`[GENERATE_FILE_ROUTE] LLM build complete | Model: ${result.modelUsed} | Duration: ${duration}ms`);
+      console.log(`[GENERATE_FILE_ROUTE] LLM build complete | Model: ${modelToUse} | Duration: ${duration}ms`);
     } catch (err: unknown) {
-      console.error(`[GENERATE_FILE_ROUTE] Fallback generation failed for ${formattedFilename}:`, getErrorMessage(err));
+      console.error(`[GENERATE_FILE_ROUTE] Generation failed for ${formattedFilename}:`, getErrorMessage(err));
       return new Response(
         JSON.stringify({ error: `Generation failed: ${getErrorMessage(err)}` }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
-
-    let code = result.content;
 
     // 3. Syntax Validation & Repair
     let syntaxError = checkSyntax(code, formattedFilename);
@@ -236,7 +243,12 @@ Output only the raw file content. No markdown. No explanation.`;
       let repaired = false;
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          code = await callGeminiRepair(formattedFilename, syntaxError!, code);
+          code = await Promise.race([
+            callGeminiRepair(formattedFilename, syntaxError!, code),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Repair timeout")), 15000)
+            ),
+          ]);
           syntaxError = checkSyntax(code, formattedFilename);
           if (!syntaxError) {
             repaired = true;

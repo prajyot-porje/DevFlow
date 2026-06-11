@@ -4,6 +4,7 @@ import { callOpenRouter } from "@/lib/openrouter-client";
 import { safeParseJSON } from "@/lib/json-utils";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 interface PlannerPlan {
   projectTitle: string;
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
       console.warn("[PLANNER_ROUTE] All Gemini keys failed, falling back to OpenRouter queue...");
       
       const PLANNER_FALLBACKS = [
+        "openai/gpt-oss-20b:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "qwen/qwen3-coder:free",
         "nvidia/nemotron-3-super-120b-a12b:free",

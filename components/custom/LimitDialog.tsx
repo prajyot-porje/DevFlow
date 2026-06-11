@@ -36,7 +36,7 @@ export function LimitDialog({ open, onOpenChange }: LimitDialogProps) {
           </div>
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-2">
-          <AlertDialogAction className="w-full bg-[var(--color-accent)] text-white hover:brightness-110 rounded-lg font-body font-semibold text-sm py-2.5 transition-all duration-fast cursor-pointer">
+          <AlertDialogAction className="w-full bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 rounded-lg font-body font-semibold text-sm py-2.5 transition-all duration-fast cursor-pointer">
             Got it
           </AlertDialogAction>
         </AlertDialogFooter>

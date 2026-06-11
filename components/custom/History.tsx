@@ -10,7 +10,7 @@ import {
   FileText,
   X,
 } from "lucide-react"
-import { iconColors, projectIcons } from "@/data/data"
+import { projectIcons } from "@/data/data"
 
 interface historyProps {
   historyOpen: boolean
@@ -24,14 +24,7 @@ const getRandomIcon = (id: string) => {
   }
   return Math.abs(hash) % projectIcons.length
 }
-const getRandomColor = (id: string) => {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash << 7) - hash + id.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash) % iconColors.length;
-};
+
 
 const formatTimeAgo = (timestamp: number) => {
   const now = Date.now()
@@ -93,7 +86,6 @@ const History: React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) => {
 
               {workspaces?.map((project) => {
                 const IconComponent = projectIcons[getRandomIcon(project._id)]
-                const colorClass = iconColors[getRandomColor(project._id)]
 
                 return (
                   <Card
@@ -104,7 +96,7 @@ const History: React.FC<historyProps> = ({ historyOpen, setHistoryOpen }) => {
                     <CardContent className="p-4">
                       <div className="flex gap-3">
                         <div
-                          className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center ${colorClass} group-hover:scale-105 transition-transform duration-200`}
+                          className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center border border-[var(--color-border-default)] bg-[var(--color-bg-inset)] text-[var(--color-text-secondary)] group-hover:text-[var(--color-accent)] group-hover:border-[var(--color-border-strong)] group-hover:scale-105 transition-all duration-200"
                         >
                           <IconComponent className="w-6 h-6" />
                         </div>

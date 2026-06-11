@@ -49,14 +49,6 @@ const MODEL_OPTIONS = [
     badge: "Free",
     icon: Zap,
   },
-  {
-    label: "Deepseek v4 Flash (Free)",
-    provider: "Deepseek",
-    value: "deepseek/deepseek-v4-flash:free",
-    description: "Fast and efficient generation",
-    badge: "Free",
-    icon: Zap,
-  },
 ]
 
 const THEME_OPTIONS = [
@@ -65,24 +57,24 @@ const THEME_OPTIONS = [
     value: "light",
     icon: Sun,
     description: "Clean and bright",
-    preview: "bg-[#FAF8F2]",
-    previewAccent: "bg-[#1E293B]",
+    preview: "bg-[#ffffff]",
+    previewAccent: "bg-[#09090b]",
   },
   {
     label: "Dark",
     value: "dark",
     icon: Moon,
     description: "Easy on the eyes",
-    preview: "bg-[#0A0F1A]",
-    previewAccent: "bg-[#0EA5E9]",
+    preview: "bg-[#09090b]",
+    previewAccent: "bg-[#ffffff]",
   },
   {
     label: "System",
     value: "system",
     icon: Monitor,
     description: "Match your device",
-    preview: "bg-gradient-to-r from-[#FAF8F2] to-[#0A0F1A]",
-    previewAccent: "bg-[#0EA5E9]",
+    preview: "bg-gradient-to-r from-[#ffffff] to-[#09090b]",
+    previewAccent: "bg-[#71717a]",
   },
 ]
 

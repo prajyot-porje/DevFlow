@@ -5,7 +5,6 @@ export const runtime = "nodejs";
 const MODELS = [
   "poolside/laguna-m.1:free",
   "nvidia/nemotron-3-super-120b-a12b:free",
-  "deepseek/deepseek-v4-flash:free",
 ];
 
 export async function GET() {

@@ -70,7 +70,7 @@ export default function LandingPage() {
               className={`rounded-full px-8 py-4 font-body font-bold text-base transition-[transform,filter,box-shadow] duration-fast ease-soft active:scale-[0.97] flex items-center justify-center gap-3 mx-auto cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed ${
                 mounted && theme === "light"
                   ? "bg-[var(--color-bg-page)] text-[var(--color-text-primary)] hover:opacity-90 shadow-[0_4px_14px_rgba(255,255,255,0.2)]"
-                  : "bg-[var(--color-accent)] text-white hover:brightness-110 shadow-[0_0_0_1px_var(--color-accent),0_8px_24px_rgba(140,96,243,0.3)] hover:shadow-[0_0_0_1px_var(--color-accent),0_12px_32px_rgba(140,96,243,0.4)]"
+                  : "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 shadow-[0_0_0_1px_var(--color-accent),0_8px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_0_0_1px_var(--color-accent),0_12px_32px_rgba(0,0,0,0.3)]"
               }`}
             >
               <span>{isNavigating ? "Loading..." : "Start Building Free"}</span>

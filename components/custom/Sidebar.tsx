@@ -77,14 +77,15 @@ const Sidebar = () => {
       >
         {/* Sidebar Header */}
         <div className="flex items-center gap-3 px-4 py-5 shrink-0 h-[72px]">
-          <div className="w-8 h-8 rounded-xl bg-linear-to-br from-[var(--color-accent)] to-violet-600 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(140,96,243,0.3)]">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="DevFlow Logo"
+            className="w-8 h-8 object-cover rounded-lg shrink-0 shadow-sm grayscale contrast-125 dark:invert"
+          />
           {sidebarOpen && (
             <div className="flex flex-col animate-in fade-in duration-300 min-w-0">
               <span className="font-logo font-semibold text-base leading-tight tracking-normal truncate">
-                <span className="text-[var(--color-text-primary)]">Dev </span>
-                <span className="text-[var(--color-accent)]">Flow</span>
+                <span className="text-[var(--color-text-primary)]">DevFlow</span>
               </span>
               <span className="font-body text-[11px] font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">
                 Code Studio

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Menu, X, Sparkles, Loader2 } from "lucide-react";
+import { Menu, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
@@ -91,12 +91,13 @@ export function LandingNavbar() {
               className="flex items-center gap-2.5 cursor-pointer group"
               onClick={() => router.push("/")}
             >
-              <div className="w-8 h-8 bg-linear-to-br from-violet-600 to-violet-700 dark:from-violet-400 dark:to-violet-500 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-[0_0_12px_rgba(140,96,243,0.3)] transition-all duration-300">
-                <Sparkles className="w-4 h-4 text-white dark:text-surface-950" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="DevFlow Logo"
+                className="w-8 h-8 object-cover rounded-lg shadow-sm group-hover:shadow-md grayscale contrast-125 dark:invert transition-all duration-300"
+              />
               <span className="font-logo font-semibold text-[22px] tracking-normal">
-                <span className="text-[var(--color-text-primary)]">Dev </span>
-                <span className="text-[var(--color-accent)]">Flow</span>
+                <span className="text-[var(--color-text-primary)]">DevFlow</span>
               </span>
             </div>
 
@@ -136,7 +137,7 @@ export function LandingNavbar() {
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] hover:text-[var(--color-text-primary)] transition-all duration-200"
-                title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                title={mounted ? `Switch to ${theme === "dark" ? "light" : "dark"} mode` : undefined}
               >
                 {mounted && theme === "dark" ? (
                   <Sun className="w-4 h-4" />
@@ -165,7 +166,7 @@ export function LandingNavbar() {
                     router.push("/chat");
                   }}
                   disabled={isNavigating}
-                  className="px-5 py-2 rounded-full font-body font-semibold text-sm bg-[var(--color-accent)] text-white hover:brightness-110 shadow-[0_0_0_1px_var(--color-accent),0_4px_16px_rgba(140,96,243,0.25)] transition-all duration-200 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-full font-body font-semibold text-sm bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:opacity-90 shadow-[0_0_0_1px_var(--color-accent),0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-200 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
                   {isNavigating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Dashboard
@@ -247,7 +248,7 @@ export function LandingNavbar() {
                     router.push("/chat");
                   }}
                   disabled={isNavigating}
-                  className="w-full py-3 rounded-full font-body font-bold text-sm bg-[var(--color-accent)] text-white cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  className="w-full py-3 rounded-full font-body font-bold text-sm bg-[var(--color-accent)] text-[var(--color-accent-foreground)] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                 >
                   {isNavigating && <Loader2 className="w-4 h-4 animate-spin" />}
                   Dashboard
