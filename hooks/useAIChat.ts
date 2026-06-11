@@ -75,6 +75,7 @@ export function useAIChat({
   const [userInput, setUserInput] = useState("");
   const [selectedModel, setSelectedModel] = useState<string>("auto");
   const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [followUpFiles, setFollowUpFiles] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -88,8 +89,15 @@ export function useAIChat({
           setSelectedModel(storedModel);
         }
       }
+
+      if (params.has("fromTemplate")) {
+        params.delete("fromTemplate");
+        params.delete("templateName");
+        const newSearch = params.toString();
+        router.replace(newSearch ? `?${newSearch}` : window.location.pathname);
+      }
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (selectedModel) {
@@ -134,6 +142,7 @@ export function useAIChat({
 
   const GetAiResponse = useCallback(
     async (currentMessages: ChatMessage[]) => {
+      console.log("[useAIChat] GetAiResponse entered. Current messages:", currentMessages);
       setIsLoading(true);
       setGeneratingCode(true);
       setResponseReceived(false);
@@ -186,6 +195,275 @@ export function useAIChat({
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
+      console.log("[useAIChat] isFollowUp check starting. workspaceId:", workspaceId);
+      // Check if this is a follow-up (existing project with generated files)
+      const workspace = await convex.query(api.workspace.GetWorkspace, {
+        workspaceID: workspaceId as Id<"workspaces">,
+      });
+      const existingFiles = workspace?.files 
+        ? Object.keys(workspace.files) 
+        : [];
+      const isFollowUp = existingFiles.length > 0 && workspace?.info?.status === "done";
+      console.log("[useAIChat] isFollowUp check complete. isFollowUp:", isFollowUp, "files count:", existingFiles.length, "status:", workspace?.info?.status);
+
+      if (isFollowUp) {
+        // 1. Set status to generating
+        await updateInfo({ 
+          workspaceID: workspaceId as Id<"workspaces">, 
+          info: {
+            ...(workspace?.info || {}),
+            status: "generating",
+          }
+        });
+
+        // 2. Call follow-up planner
+        let filesToChange: string[] = [];
+        let changeReason = "";
+        
+        try {
+          console.log("[useAIChat] Calling follow-up planner route with prompt:", prompt);
+          const followUpResponse = await fetch("/api/follow-up-plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userPrompt: prompt,
+              existingFiles,
+              existingPlan: workspace?.info?.plan,
+            }),
+            signal,
+          });
+
+          if (!followUpResponse.ok) throw new Error("Follow-up planner failed");
+          
+          const followUpData = await followUpResponse.json();
+          filesToChange = followUpData.filesToChange;
+          changeReason = followUpData.changeReason;
+          console.log("[useAIChat] Follow-up planner succeeded. filesToChange:", filesToChange, "reason:", changeReason);
+        } catch (err) {
+          console.warn("[FOLLOW_UP] Planner failed", err);
+          toast.error("Follow-up planner failed. Please try again.");
+          await updateInfo({
+            workspaceID: workspaceId as Id<"workspaces">,
+            info: {
+              ...(workspace?.info || {}),
+              status: "done",
+            }
+          });
+          setIsLoading(false);
+          setGeneratingCode(false);
+          return;
+        }
+
+        // 3. Handle planner results
+        if (filesToChange.length === 0) {
+          console.log("[useAIChat] Follow-up planner returned 0 files to change.");
+          const finalContent = `No code changes are required for this request:\n\n${changeReason || "Everything is up to date."}`;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: assistantMsgId,
+              type: "assistant",
+              content: finalContent,
+              timestamp: Date.now(),
+            }
+          ]);
+          await updateInfo({
+            workspaceID: workspaceId as Id<"workspaces">,
+            info: {
+              ...(workspace?.info || {}),
+              status: "done",
+            }
+          });
+          await updateMessages({
+            workspaceID: workspaceId as Id<"workspaces">,
+            message: mapMessagesToDb([...currentMessages, {
+              role: "assistant",
+              content: finalContent,
+              timestamp: Date.now()
+            }]),
+          });
+          setIsLoading(false);
+          setGeneratingCode(false);
+          return;
+        }
+
+        // Set which files are being updated so UI can filter
+        setFollowUpFiles(filesToChange);
+
+        let winnerModel: string | null = null;
+        const currentFiles = { ...files };
+          
+          filesToChange.forEach((file) => {
+            const normalized = file.startsWith("/") ? file : "/" + file;
+            fileStatuses[normalized] = "pending";
+          });
+
+          planTitle = workspace?.info?.title || "DevFlow Project";
+          planDesc = workspace?.info?.description || "";
+          planFiles = filesToChange;
+
+          const initialContent = constructContent("Planning complete. Generating files...");
+
+          // Add the assistant message placeholder
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: assistantMsgId,
+              type: "assistant",
+              content: initialContent,
+              timestamp: Date.now(),
+            },
+          ]);
+          assistantMsgAdded = true;
+
+          await updateMessages({
+            workspaceID: workspaceId as Id<"workspaces">,
+            message: mapMessagesToDb([...currentMessages, {
+              role: "assistant",
+              content: initialContent,
+              timestamp: Date.now()
+            }]),
+          });
+
+          await runWithConcurrencyLimit(3, filesToChange, async (filename, index) => {
+            if (signal.aborted) return;
+            const normalized = filename.startsWith("/") ? filename : "/" + filename;
+            let retryIndex = 0;
+            const MODEL_QUEUE = [
+              "nvidia/nemotron-3-super-120b-a12b:free",
+              "openai/gpt-oss-20b:free",
+              "meta-llama/llama-3.3-70b-instruct:free",
+              "qwen/qwen3-coder:free",
+              "poolside/laguna-m.1:free",
+            ];
+            const rateLimitedModels = new Set<string>();
+
+            while (retryIndex < MODEL_QUEUE.length) {
+              if (signal.aborted) break;
+              const availableModels = MODEL_QUEUE.filter(m => !rateLimitedModels.has(m));
+              const currentModel = winnerModel ?? availableModels[retryIndex % availableModels.length] ?? MODEL_QUEUE[0];
+
+              fileStatuses[normalized] = "generating";
+              const progressContent = constructContent(
+                `Generating ${normalized} (Attempt ${retryIndex + 1}/${MODEL_QUEUE.length}: ${currentModel.split("/").pop()})...`
+              );
+
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMsgId ? { ...msg, content: progressContent } : msg
+                )
+              );
+
+              await updateMessages({
+                workspaceID: workspaceId as Id<"workspaces">,
+                message: mapMessagesToDb([...currentMessages, {
+                  role: "assistant",
+                  content: progressContent,
+                  timestamp: Date.now()
+                }]),
+              });
+
+              try {
+                const res = await fetch("/api/generate-file", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    filename,
+                    plan: workspace?.info?.plan,
+                    selectedModel: currentModel,
+                    fileIndex: index,
+                    changeContext: `${prompt} — ${changeReason}`,
+                  }),
+                  signal,
+                });
+
+                if (!res.ok) throw new Error(await res.text());
+
+                const result = await res.json();
+                if (!winnerModel) winnerModel = currentModel;
+
+                collectedFiles[normalized] = { code: result.code };
+                currentFiles[normalized] = { code: result.code };
+
+                const latestWorkspace = await convex.query(api.workspace.GetWorkspace, {
+                  workspaceID: workspaceId as Id<"workspaces">,
+                });
+                const mergedFiles = {
+                  ...(latestWorkspace?.files || {}),
+                  [normalized]: { code: result.code },
+                };
+
+                // Update only this file in Convex
+                await updateFiles({
+                  workspaceID: workspaceId as Id<"workspaces">,
+                  files: mergedFiles,
+                });
+                
+                fileStatuses[normalized] = "success";
+                break;
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : String(err);
+                if (msg.includes("RATE_LIMITED") || msg.includes("429")) {
+                  rateLimitedModels.add(currentModel);
+                }
+                retryIndex++;
+              }
+            }
+
+            if (fileStatuses[normalized] !== "success") {
+              fileStatuses[normalized] = "failed";
+            }
+          });
+
+          if (signal.aborted) return;
+
+          // Apply generated files to the WebContainer
+          setIsLoading(false);
+          setGeneratingCode(false);
+
+          if (Object.keys(collectedFiles).length > 0) {
+            await onFilesGenerated(collectedFiles);
+            setResponseReceived(true);
+          }
+
+          const fileList = filesToChange
+            .map((f) => {
+              const normalized = f.startsWith("/") ? f : "/" + f;
+              const status = fileStatuses[normalized];
+              const char = status === "failed" ? "!" : "x";
+              return `- [${char}] \`${normalized}\``;
+            })
+            .join("\n");
+
+          const finalContent = `I have successfully updated your project with follow-up changes!\n\n**Reason for updates:**\n${changeReason || "To fulfill the follow-up request."}\n\n**Files modified:**\n${fileList}`;
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMsgId ? { ...msg, content: finalContent } : msg
+            )
+          );
+
+          await updateInfo({
+            workspaceID: workspaceId as Id<"workspaces">,
+            info: {
+              ...(workspace?.info || {}),
+              status: "done",
+            }
+          });
+
+          await updateMessages({
+            workspaceID: workspaceId as Id<"workspaces">,
+            message: mapMessagesToDb([...currentMessages, {
+              role: "assistant",
+              content: finalContent,
+              timestamp: Date.now()
+            }]),
+          });
+
+          setFollowUpFiles(null); // reset after done
+          return; // stop here, don't run initial pipeline
+      }
+
       try {
         // Step 1: Call /api/plan
         const planResponse = await fetch("/api/plan", {
@@ -215,7 +493,7 @@ export function useAIChat({
           setRecommendations(plan.recommendations);
         }
 
-        // Initialize status in Convex
+        // Initialize status in Convex and persist the plan inside info
         await updateInfo({
           workspaceID: workspaceId as Id<"workspaces">,
           info: {
@@ -223,6 +501,7 @@ export function useAIChat({
             title: plan.projectTitle,
             description: plan.description,
             recommendations: plan.recommendations,
+            plan: plan,
           },
         });
 
@@ -473,6 +752,7 @@ export function useAIChat({
             title: planTitle,
             description: planDesc,
             recommendations: plan.recommendations,
+            plan: plan,
           },
         });
 
@@ -515,9 +795,13 @@ export function useAIChat({
           ]);
         }
 
+        const currentWorkspace = await convex.query(api.workspace.GetWorkspace, {
+          workspaceID: workspaceId as Id<"workspaces">,
+        });
         await updateInfo({
           workspaceID: workspaceId as Id<"workspaces">,
           info: {
+            ...(currentWorkspace?.info || {}),
             status: "error",
             error: err.message || "Unknown error",
           },
@@ -613,15 +897,8 @@ export function useAIChat({
   }, [workspaceId]);
 
   useEffect(() => {
-    if (loadingHistoryRef.current) return;
-    if (messages.length > 0) {
-      const lastRole = messages[messages.length - 1].type;
-      if (lastRole === "user" && !fromTemplate) {
-        GetAiResponse(messages);
-      }
-    }
     scrollToBottom();
-  }, [messages, fromTemplate, GetAiResponse, scrollToBottom]);
+  }, [messages, scrollToBottom]);
 
   const markHistoryLoaded = useCallback(() => {
     loadingHistoryRef.current = false;
@@ -637,24 +914,31 @@ export function useAIChat({
         content: decoded,
         timestamp: Date.now(),
       };
-      setMessages([greetingMessage, userMessage]);
+      const initialMsgs = [greetingMessage, userMessage];
+      setMessages(initialMsgs);
       setUserInput("");
       setIsLoading(true);
+
+      GetAiResponse(initialMsgs);
 
       const params = new URLSearchParams(window.location.search);
       params.delete("message");
       router.replace(`?${params.toString()}`);
     }
-  }, [incomingMessage, messages.length, router]);
+  }, [incomingMessage, messages.length, router, GetAiResponse]);
 
   const OnGenerate = useCallback(
     async (input: string) => {
+      console.log("[useAIChat] OnGenerate called with input:", input);
       if (!input.trim()) return;
       if (!user.user?.id) {
         router.push("/sign-in");
         return;
       }
-      if (!userDetails || !userDetails._id) return;
+      if (!userDetails || !userDetails._id) {
+        console.log("[useAIChat] OnGenerate: userDetails is missing!", userDetails);
+        return;
+      }
 
       const result = await canStartConversation({ userId: userDetails._id });
       if (!result.allowed) {
@@ -672,10 +956,13 @@ export function useAIChat({
         timestamp: Date.now(),
       };
 
-      setMessages((prev) => [...prev, userMessage]);
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
       setUserInput("");
+
+      GetAiResponse(newMessages);
     },
-    [user.user?.id, userDetails, canStartConversation, router]
+    [user.user?.id, userDetails, canStartConversation, router, messages, GetAiResponse]
   );
 
   return {
@@ -696,5 +983,6 @@ export function useAIChat({
     setSelectedModel,
     recommendations,
     setRecommendations,
+    followUpFiles,
   };
 }

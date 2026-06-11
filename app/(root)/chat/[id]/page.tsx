@@ -173,7 +173,7 @@ function parseAssistantMessage(content: string): ParsedAssistantMessage {
   return result;
 }
 
-function AssistantMessageCard({ content }: { content: string }) {
+function AssistantMessageCard({ content, followUpFiles }: { content: string; followUpFiles?: string[] | null }) {
   const parsed = parseAssistantMessage(content);
   const [copiedFile, setCopiedFile] = useState<string | null>(null);
 
@@ -240,6 +240,15 @@ function AssistantMessageCard({ content }: { content: string }) {
   const failedFiles = parsed.files.filter(f => f.status === "failed").length;
   const progressPct = totalFiles > 0 ? ((successFiles + failedFiles) / totalFiles) * 100 : 0;
   const activeFiles = parsed.files.filter(f => f.status !== "pending");
+  const displayedActiveFiles = followUpFiles
+    ? activeFiles.filter((file) => {
+        const normFile = file.path.startsWith("/") ? file.path.slice(1) : file.path;
+        return followUpFiles.some(f => {
+          const normF = f.startsWith("/") ? f.slice(1) : f;
+          return normFile === normF;
+        });
+      })
+    : activeFiles;
 
   // 3. Generating/Building State
   if (parsed.status === "generating") {
@@ -277,10 +286,10 @@ function AssistantMessageCard({ content }: { content: string }) {
         </div>
 
         {/* Files Checklist */}
-        {activeFiles.length > 0 && (
+        {displayedActiveFiles.length > 0 && (
           <div className="border border-[var(--color-border-subtle)] rounded-xl overflow-hidden bg-[var(--color-bg-elevated)]/20 animate-in fade-in duration-300">
             <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border-subtle)] custom-scrollbar-workspace">
-              {activeFiles.map((file, idx) => {
+              {displayedActiveFiles.map((file, idx) => {
                 const displayPath = file.path.startsWith("/") ? file.path.slice(1) : file.path;
                 return (
                   <div key={idx} className="flex items-center justify-between px-3.5 py-2.5 text-[13px] hover:bg-[var(--color-bg-elevated)]/40 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -472,6 +481,7 @@ export default function ChatWorkspacePage() {
     setSelectedModel,
     recommendations,
     setRecommendations,
+    followUpFiles,
   } = useAIChat({
     workspaceId: id,
     files,
@@ -681,7 +691,7 @@ export default function ChatWorkspacePage() {
                                           : "w-full"
                                       }>
                                         {msg.type === "assistant" ? (
-                                          <AssistantMessageCard content={msg.content} />
+                                          <AssistantMessageCard content={msg.content} followUpFiles={followUpFiles} />
                                         ) : (
                                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                                         )}

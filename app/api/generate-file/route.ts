@@ -65,10 +65,22 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    const { filename, plan, selectedModel, fileIndex } = await req.json();
-    if (!filename || !plan) {
-      return new Response("Bad Request: Missing filename or plan", { status: 400 });
+    const { filename, plan: reqBodyPlan, selectedModel, fileIndex, changeContext } = await req.json();
+    if (!filename) {
+      return new Response("Bad Request: Missing filename", { status: 400 });
     }
+
+    const plan = reqBodyPlan || {
+      projectTitle: "DevFlow Project",
+      description: "React + Vite Application",
+      designSystem: {
+        style: "Modern SaaS",
+        colors: { primary: "#000000", accent: "#3b82f6", background: "#ffffff" },
+        fontFamily: "Inter, sans-serif"
+      },
+      files: [filename],
+      dependencies: {}
+    };
 
     const formattedFilename = filename.startsWith("/") ? filename : "/" + filename;
     console.log(`[GENERATE_FILE_ROUTE] File: "${formattedFilename}" (index: ${fileIndex})`);
@@ -196,13 +208,17 @@ export default defineConfig({
       : "";
     const sectionsCtx = plan.sections?.length ? `\nSections in order: ${plan.sections.join(", ")}` : "";
 
+    const changeSection = changeContext
+      ? `\n\nChange request: ${changeContext}\nModify this file to fulfill the change request. Keep all unrelated parts of the file exactly as they were.`
+      : "";
+
     const userMessage = `Generate the complete content for file: ${formattedFilename}
 Project: ${plan.projectTitle} — ${plan.description}${designCtx}${sectionsCtx}
 All files: ${(plan.files || []).map((f: string) => f.startsWith("/") ? f : "/" + f).join(", ")}
 Dependencies: ${JSON.stringify(plan.dependencies || {})}
 ${isAppFile
   ? "App.jsx must ONLY import and render the component files in order. Do NOT write any section UI code inline."
-  : `This file implements the "${componentName}" section/component.`}
+  : `This file implements the "${componentName}" section/component.`}${changeSection}
 Output only the raw file content. No markdown. No explanation.`;
 
     const openrouterKeys = [
