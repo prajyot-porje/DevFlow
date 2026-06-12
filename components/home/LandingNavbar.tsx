@@ -3,24 +3,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Menu, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { motion } from "motion/react";
 
 export function LandingNavbar() {
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const navRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // ── Solidify navbar background and scroll spy ──────────────────────────
   useEffect(() => {
@@ -134,18 +126,6 @@ export function LandingNavbar() {
 
             {/* Right side actions */}
             <div className="hidden lg:flex items-center gap-4">
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] hover:text-[var(--color-text-primary)] transition-all duration-200"
-                title={mounted ? `Switch to ${theme === "dark" ? "light" : "dark"} mode` : undefined}
-              >
-                {mounted && theme === "dark" ? (
-                  <Sun className="w-4 h-4" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
-              </button>
-              
               <SignedOut>
                 <SignInButton mode="modal">
                   <button className="px-5 py-2 rounded-full font-body font-semibold text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-200 cursor-pointer">
@@ -179,16 +159,6 @@ export function LandingNavbar() {
 
             {/* Mobile menu toggle */}
             <div className="lg:hidden flex items-center gap-2">
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="w-9 h-9 flex items-center justify-center text-[var(--color-text-secondary)]"
-              >
-                {mounted && theme === "dark" ? (
-                  <Sun className="w-4 h-4" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
-              </button>
               <button
                 className="text-[var(--color-text-secondary)] p-2"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
