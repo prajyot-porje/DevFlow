@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   title: "Dev Flow",
   description: "Build Beautiful UIs with AI Magic",
   icons: {
-    icon: "/logo.png",
+    icon: "/logo-new.png",
   },
 };
 

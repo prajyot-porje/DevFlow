@@ -9,9 +9,9 @@ export default function ChatLoading() {
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-28 h-28 bg-[var(--color-accent)] opacity-10 rounded-full blur-2xl animate-pulse" />
         
         <img
-          src="/logo.png"
+          src="/logo-new.png"
           alt="DevFlow Logo"
-          className="relative w-14 h-14 rounded-xl object-cover shadow-sm grayscale contrast-125 dark:invert mb-6 animate-bounce"
+          className="relative w-14 h-14 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.15)] dark:drop-shadow-none dark:invert mb-6 animate-bounce"
         />
 
         {/* Loading text with a subtle spinner */}

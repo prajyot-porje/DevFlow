@@ -78,9 +78,9 @@ const Sidebar = () => {
         {/* Sidebar Header */}
         <div className="flex items-center gap-3 px-4 py-5 shrink-0 h-[72px]">
           <img
-            src="/logo.png"
+            src="/logo-new.png"
             alt="DevFlow Logo"
-            className="w-8 h-8 object-cover rounded-lg shrink-0 shadow-sm grayscale contrast-125 dark:invert"
+            className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)] dark:drop-shadow-none dark:invert"
           />
           {sidebarOpen && (
             <div className="flex flex-col animate-in fade-in duration-300 min-w-0">

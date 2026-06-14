@@ -58,6 +58,9 @@ export default function DevFlow() {
   const [modelStatuses, setModelStatuses] = useState<Record<string, "online" | "offline">>({
     "poolside/laguna-m.1:free": "online",
     "nvidia/nemotron-3-super-120b-a12b:free": "online",
+    "openai/gpt-oss-20b:free": "online",
+    "meta-llama/llama-3.3-70b-instruct:free": "online",
+    "qwen/qwen3-coder:free": "online",
   });
   const [offlineAlertOpen, setOfflineAlertOpen] = useState(false);
 
@@ -95,7 +98,10 @@ export default function DevFlow() {
             setModelStatuses(data.statuses);
             const allOffline = 
               data.statuses["poolside/laguna-m.1:free"] === "offline" &&
-              data.statuses["nvidia/nemotron-3-super-120b-a12b:free"] === "offline";
+              data.statuses["nvidia/nemotron-3-super-120b-a12b:free"] === "offline" &&
+              data.statuses["openai/gpt-oss-20b:free"] === "offline" &&
+              data.statuses["meta-llama/llama-3.3-70b-instruct:free"] === "offline" &&
+              data.statuses["qwen/qwen3-coder:free"] === "offline";
             if (allOffline) {
               setOfflineAlertOpen(true);
             }
@@ -284,6 +290,24 @@ export default function DevFlow() {
                       <span className="flex items-center gap-2 font-medium">
                         <span>Nvidia Nemotron-3 Super 120B (Free)</span>
                         <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["nvidia/nemotron-3-super-120b-a12b:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="openai/gpt-oss-20b:free">
+                      <span className="flex items-center gap-2 font-medium">
+                        <span>OpenAI GPT-OSS-20B (Free)</span>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["openai/gpt-oss-20b:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="meta-llama/llama-3.3-70b-instruct:free">
+                      <span className="flex items-center gap-2 font-medium">
+                        <span>Llama 3.3 70B Instruct (Free)</span>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["meta-llama/llama-3.3-70b-instruct:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="qwen/qwen3-coder:free">
+                      <span className="flex items-center gap-2 font-medium">
+                        <span>Qwen 3 Coder (Free)</span>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${modelStatuses["qwen/qwen3-coder:free"] === "online" ? "bg-green-500 animate-pulse" : "bg-rose-500"}`} />
                       </span>
                     </SelectItem>
 

@@ -49,6 +49,30 @@ const MODEL_OPTIONS = [
     badge: "Free",
     icon: Zap,
   },
+  {
+    label: "OpenAI GPT-OSS-20B (Free)",
+    provider: "OpenAI",
+    value: "openai/gpt-oss-20b:free",
+    description: "Specialized in open-source generation",
+    badge: "Free",
+    icon: Zap,
+  },
+  {
+    label: "Llama 3.3 70B Instruct (Free)",
+    provider: "Meta",
+    value: "meta-llama/llama-3.3-70b-instruct:free",
+    description: "State-of-the-art open model from Meta",
+    badge: "Free",
+    icon: Zap,
+  },
+  {
+    label: "Qwen 3 Coder (Free)",
+    provider: "Qwen",
+    value: "qwen/qwen3-coder:free",
+    description: "Excellent code reasoning and generation",
+    badge: "Free",
+    icon: Zap,
+  },
 ]
 
 const THEME_OPTIONS = [

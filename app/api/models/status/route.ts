@@ -5,6 +5,9 @@ export const runtime = "nodejs";
 const MODELS = [
   "poolside/laguna-m.1:free",
   "nvidia/nemotron-3-super-120b-a12b:free",
+  "openai/gpt-oss-20b:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "qwen/qwen3-coder:free",
 ];
 
 export async function GET() {

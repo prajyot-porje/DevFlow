@@ -72,9 +72,9 @@ const Header = ({ showHistoryButton = false, onToggleHistory }: { showHistoryBut
           {/* DevFlow Icon & Brand name */}
           <div className="flex items-center gap-2 shrink-0">
             <img
-              src="/logo.png"
+              src="/logo-new.png"
               alt="DevFlow Logo"
-              className="w-5 h-5 object-cover rounded shrink-0 shadow-sm grayscale contrast-125 dark:invert"
+              className="w-5 h-5 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)] dark:drop-shadow-none dark:invert"
             />
             <span className="font-logo font-semibold text-base tracking-normal">
               <span className="text-[var(--color-text-primary)]">DevFlow</span>

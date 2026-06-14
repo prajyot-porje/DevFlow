@@ -345,7 +345,7 @@ export function useAIChat({
 
               fileStatuses[normalized] = "generating";
               const progressContent = constructContent(
-                `Generating ${normalized} (Attempt ${retryIndex + 1}/${MODEL_QUEUE.length}: ${currentModel.split("/").pop()})...`
+                `Generating ${normalized} (Attempt ${retryIndex + 1}/${MODEL_QUEUE.length})...`
               );
 
               setMessages((prev) =>
@@ -555,7 +555,7 @@ export function useAIChat({
 
             fileStatuses[normalized] = "generating";
             const progressContent = constructContent(
-              `Generating ${normalized} (Attempt ${attempt + 1}/${BUILDER_MODELS.length}: ${currentModel.split("/").pop()})...`
+              `Generating ${normalized} (Attempt ${attempt + 1}/${BUILDER_MODELS.length})...`
             );
 
             setMessages((prev) =>
@@ -651,7 +651,7 @@ export function useAIChat({
 
               fileStatuses[normalized] = "generating";
               const progressContent = constructContent(
-                `Retrying ${normalized} (Final Pass - Attempt ${attempt + 1}/${BUILDER_MODELS.length}: ${currentModel.split("/").pop()})...`
+                `Retrying ${normalized} (Final Pass - Attempt ${attempt + 1}/${BUILDER_MODELS.length})...`
               );
 
               setMessages((prev) =>

@@ -84,9 +84,9 @@ export function LandingNavbar() {
               onClick={() => router.push("/")}
             >
               <img
-                src="/logo.png"
+                src="/logo-new.png"
                 alt="DevFlow Logo"
-                className="w-8 h-8 object-cover rounded-lg shadow-sm group-hover:shadow-md grayscale contrast-125 dark:invert transition-all duration-300"
+                className="w-8 h-8 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)] dark:drop-shadow-none dark:invert transition-all duration-300"
               />
               <span className="font-logo font-semibold text-[22px] tracking-normal">
                 <span className="text-[var(--color-text-primary)]">DevFlow</span>
